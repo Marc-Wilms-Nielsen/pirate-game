@@ -1,6 +1,6 @@
-# Mit Spil
+# Pirate Game
 
-Et 2D-spil lavet i [Godot 4](https://godotengine.org/).
+Et hyggeligt top-down 2D-piratspil lavet i [Godot 4](https://godotengine.org/).
 
 ## Kom i gang
 
@@ -32,4 +32,5 @@ Et 2D-spil lavet i [Godot 4](https://godotengine.org/).
 ```
 
 Se [`docs/conventions.md`](docs/conventions.md) for navngivning og arbejdsgang,
-og [`docs/game-design.md`](docs/game-design.md) for spillets idé.
+[`docs/game-design.md`](docs/game-design.md) for spillets idé,
+[`docs/roadmap.md`](docs/roadmap.md) for planen og [`docs/ai-workflow.md`](docs/ai-workflow.md) for, hvordan vi bruger AI.
