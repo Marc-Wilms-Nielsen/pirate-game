@@ -17,7 +17,8 @@ Alle beslutninger testes mod disse tre:
 
 ## Perspektiv og stil
 - 2D, set oppefra (top-down).
-- Rolig, varm farvepalet. Pixel art eller blød håndtegnet stil (besluttes i milepæl 1).
+- Rolig, varm farvepalet. **Blød, glat stil** (ikke pixel art): fuld opløsning, anti-aliasing, realistisk belyst hav.
+- Store, lyse og stille laguner omkring øerne.
 - Lyd: havets brusen, måger, vind i sejlene, rolig musik der skifter med område (åbent hav / havn / ø).
 
 ## Kerne-loop
@@ -68,9 +69,11 @@ Alle opgraderinger defineres som data (Godot Resources), så de kan balanceres u
 |----------|----------|
 | Sejl op/ned (3 trin: nede / halv / fuld) | W / S |
 | Drej roret | A / D |
-| Gå (på land) | WASD / piletaster |
+| Kast / hæv anker | Mellemrum |
+| Hop i vandet (når skibet ligger stille) / gå om bord | F |
+| Gå (på land) / svøm (i vandet) | WASD / piletaster |
 | Affyr kanoner (venstre/højre) | Q / E |
-| Interager (gå i land, loot, handel) | F |
+| Interager (loot, handel) | F |
 | Angreb / skyd | Venstre / højre museknap |
 
 ## Udenfor scope (indtil videre)

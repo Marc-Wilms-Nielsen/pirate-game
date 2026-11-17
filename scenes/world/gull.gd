@@ -34,6 +34,6 @@ func _draw() -> void:
 	for p in wing:
 		shadow.append(p + shadow_offset)
 
-	draw_polyline(shadow, Color(0, 0, 0, 0.18), 1.5)
-	draw_polyline(wing, Color.WHITE, 1.5)
-	draw_circle(Vector2(0.5, 0), 1.2, Color.WHITE)
+	draw_polyline(shadow, Color(0, 0, 0, 0.18), 1.5, true)
+	draw_polyline(wing, Color.WHITE, 1.5, true)
+	draw_circle(Vector2(0.5, 0), 1.2, Color.WHITE, true, -1.0, true)

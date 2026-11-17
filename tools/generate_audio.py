@@ -144,6 +144,42 @@ def sail_flap(d=0.55):
     return out / np.max(np.abs(out)) * 0.6
 
 
+def splash(d=0.7):
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    body = shaped_noise(n, 150, 5000, tilt=0.6) * np.exp(-t * 7)
+    bubbles = np.zeros(n)
+    for _ in range(14):
+        start = int(rng.uniform(0.05, 0.5) * SR)
+        bt = np.arange(int(0.04 * SR)) / SR
+        f = rng.uniform(500, 1400) * (1 + bt * 8)
+        b = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-bt * 90)
+        seg = b[: n - start]
+        bubbles[start:start + len(seg)] += seg * rng.uniform(0.1, 0.3)
+    out = (body + bubbles) * fade(n, 0.005, 0.2)
+    return out / np.max(np.abs(out)) * 0.6
+
+
+def anchor_chain(d=1.6):
+    n = int(d * SR)
+    out = np.zeros(n)
+    k = np.arange(int(0.05 * SR)) / SR
+    pos, gap = 0.0, 0.035
+    while pos < d - 0.45:
+        f = rng.uniform(1800, 3200)
+        clink = np.exp(-k * 70) * (np.sin(2 * np.pi * f * k) + 0.5 * np.sin(2 * np.pi * f * 2.7 * k))
+        i = int(pos * SR)
+        seg = clink[: n - i]
+        out[i:i + len(seg)] += seg * rng.uniform(0.4, 1.0)
+        pos += gap * rng.uniform(0.7, 1.3)
+        gap *= 1.04
+    s = splash(0.6) * 0.8
+    i = n - len(s)
+    out[i:] += s
+    out *= fade(n, 0.01, 0.15)
+    return out / np.max(np.abs(out)) * 0.55
+
+
 if __name__ == "__main__":
     print("Genererer lyde:")
     write_wav(AMBIENCE / "ocean_loop.wav", ocean(), loop=True)
@@ -152,3 +188,5 @@ if __name__ == "__main__":
         write_wav(SFX / f"gull_{i}.wav", gull(calls, base))
     write_wav(SFX / "creak.wav", creak())
     write_wav(SFX / "sail_flap.wav", sail_flap())
+    write_wav(SFX / "splash.wav", splash())
+    write_wav(SFX / "anchor_chain.wav", anchor_chain())

@@ -1,6 +1,6 @@
 @tool
 extends StaticBody2D
-## Procedurelt genereret ø med lavvande, skum, strand, græs og palmer.
+## Procedurelt genereret ø med en stor, rolig lagune, skum, strand, græs og palmer.
 ## Justér radius, seed og antal palmer i Inspector – øen opdateres direkte i editoren.
 
 const GullScript := preload("res://scenes/world/gull.gd")
@@ -24,8 +24,14 @@ const POINTS := 64
 		palm_count = value
 		_regenerate()
 @export_range(0, 4) var gull_count: int = 2
+## Hvor langt det lyse lavvande går ud fra stranden
+@export_range(1.2, 3.0) var lagoon_size: float = 2.2:
+	set(value):
+		lagoon_size = value
+		_regenerate()
 
 var _foam: Line2D
+var _land_shape := PackedVector2Array()
 var _time: float = 0.0
 var _gull_timer: float = 3.0
 var _gull_player: AudioStreamPlayer2D
@@ -35,6 +41,7 @@ var _gull_streams: Array[AudioStream] = []
 func _ready() -> void:
 	_generate()
 	if not Engine.is_editor_hint():
+		add_to_group("islands")
 		_spawn_gulls()
 		_setup_audio()
 
@@ -71,15 +78,25 @@ func _generate() -> void:
 	rng.seed = seed_value
 	var shape := _make_shape(rng)
 
-	# Lag fra yderst til inderst
-	_add_polygon(_scaled(shape, 1.55), Color(0.40, 0.78, 0.80, 0.25))
-	_add_polygon(_scaled(shape, 1.25), Color(0.55, 0.86, 0.82, 0.40))
+	_land_shape = shape
+
+	# Lagunen: mange halvgennemsigtige lag giver en blød overgang
+	# fra dybt hav til lyst, stille vand ved stranden.
+	var layers := 8
+	for i in layers:
+		var k := float(i) / (layers - 1)
+		var size := lerpf(lagoon_size, 1.06, k)
+		var color := Color(0.30, 0.72, 0.80).lerp(Color(0.66, 0.93, 0.88), k)
+		color.a = lerpf(0.10, 0.38, k)
+		_add_polygon(_scaled(shape, size), color)
 
 	_foam = Line2D.new()
 	_foam.points = _scaled(shape, 1.08)
 	_foam.closed = true
-	_foam.width = 2.0
-	_foam.default_color = Color(1, 1, 1, 0.6)
+	_foam.width = 3.0
+	_foam.default_color = Color(1, 1, 1, 0.5)
+	_foam.antialiased = true
+	_foam.joint_mode = Line2D.LINE_JOINT_ROUND
 	_tag(_foam)
 
 	_add_polygon(_scaled(shape, 1.04), Color(0.78, 0.70, 0.50)) # våd sand
@@ -131,7 +148,12 @@ func _add_polygon(points: PackedVector2Array, color: Color, pos: Vector2 = Vecto
 	poly.polygon = points
 	poly.color = color
 	poly.position = pos
+	poly.antialiased = true
 	_tag(poly)
+
+
+func is_on_land(global_point: Vector2) -> bool:
+	return Geometry2D.is_point_in_polygon(to_local(global_point), _land_shape)
 
 
 func _scaled(points: PackedVector2Array, factor: float) -> PackedVector2Array:

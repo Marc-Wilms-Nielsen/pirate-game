@@ -12,12 +12,14 @@ Målet er at bevise, at kernen er hyggelig: sejle, gå i land, loote, sælge, op
 - [x] Kamera, der følger blødt med, zoomer ud ved fart og kigger frem
 - [x] Lydkulisse: hav, måger, vind, knirken – vindstyrke følger fart (syntetiske placeholders)
 - [x] Procedurelle øer med strand, skum, palmer og måger (4 stk.)
+- [x] Anker: kast/hæv med Mellemrum (reb og mærke i vandet, kædelyd)
+- [x] Glattere grafik: fuld opløsning, anti-aliasing, realistisk belyst hav, store rolige laguner
 - [ ] **Spiltest og justering** (fart, drejning, lyd, farver)
 - **Test:** Er det rart bare at sejle i 5 minutter? Hvis nej → justér, før vi går videre.
 
 ### M2 – I land og loot
-- [ ] Gå i land / tilbage om bord ved strand eller mole
-- [ ] Kaptajn bevæger sig rundt på øen
+- [x] Hop i vandet, når skibet ligger stille (F), og gå om bord igen tæt på skibet
+- [x] Kaptajn (placeholder) går på land og svømmer i vandet
 - [ ] Ting at samle: kister, vragrester, flaskepost
 - [ ] Simpelt inventar og lastrum på skibet
 
