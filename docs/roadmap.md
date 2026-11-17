@@ -13,7 +13,8 @@ Målet er at bevise, at kernen er hyggelig: sejle, gå i land, loote, sælge, op
 - [x] Lydkulisse: hav, måger, vind, knirken – vindstyrke følger fart (syntetiske placeholders)
 - [x] Procedurelle øer med strand, skum, palmer og måger (4 stk.)
 - [x] Anker: kast/hæv med Mellemrum (reb og mærke i vandet, kædelyd)
-- [x] Glattere grafik: fuld opløsning, anti-aliasing, realistisk belyst hav, store rolige laguner
+- [x] Glattere grafik: fuld opløsning, anti-aliasing, realistisk belyst hav
+- [x] Hav med dybde: klart, glasagtigt vand med synlig sandbund, lysmønstre og rolige bølger i lagunerne, blød overgang til åbent hav
 - [ ] **Spiltest og justering** (fart, drejning, lyd, farver)
 - **Test:** Er det rart bare at sejle i 5 minutter? Hvis nej → justér, før vi går videre.
 

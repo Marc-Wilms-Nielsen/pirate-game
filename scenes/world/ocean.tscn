@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Shader" path="res://scenes/world/ocean.gdshader" id="1_shader"]
+[ext_resource type="Script" path="res://scenes/world/ocean.gd" id="2_script"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("1_shader")
@@ -13,3 +14,4 @@ offset_top = -6000.0
 offset_right = 6000.0
 offset_bottom = 6000.0
 mouse_filter = 2
+script = ExtResource("2_script")

@@ -1,6 +1,7 @@
 @tool
 extends StaticBody2D
-## Procedurelt genereret ø med en stor, rolig lagune, skum, strand, græs og palmer.
+## Procedurelt genereret ø med strand, græs og palmer.
+## Lagunen (det lave, klare vand) tegnes af hav-shaderen ud fra get_shape_data().
 ## Justér radius, seed og antal palmer i Inspector – øen opdateres direkte i editoren.
 
 const GullScript := preload("res://scenes/world/gull.gd")
@@ -32,6 +33,7 @@ const POINTS := 64
 
 var _foam: Line2D
 var _land_shape := PackedVector2Array()
+var _phases := Vector3.ZERO
 var _time: float = 0.0
 var _gull_timer: float = 3.0
 var _gull_player: AudioStreamPlayer2D
@@ -39,9 +41,9 @@ var _gull_streams: Array[AudioStream] = []
 
 
 func _ready() -> void:
+	add_to_group("islands")
 	_generate()
 	if not Engine.is_editor_hint():
-		add_to_group("islands")
 		_spawn_gulls()
 		_setup_audio()
 
@@ -50,8 +52,8 @@ func _process(delta: float) -> void:
 	_time += delta
 	if is_instance_valid(_foam):
 		var wave := sin(_time * 1.1)
-		_foam.scale = Vector2.ONE * (1.0 + 0.025 * wave)
-		_foam.modulate.a = 0.55 + 0.35 * wave
+		_foam.scale = Vector2.ONE * (1.0 + 0.012 * wave)
+		_foam.modulate.a = 0.5 + 0.3 * wave
 
 	if Engine.is_editor_hint() or _gull_streams.is_empty():
 		return
@@ -80,26 +82,15 @@ func _generate() -> void:
 
 	_land_shape = shape
 
-	# Lagunen: mange halvgennemsigtige lag giver en blød overgang
-	# fra dybt hav til lyst, stille vand ved stranden.
-	var layers := 8
-	for i in layers:
-		var k := float(i) / (layers - 1)
-		var size := lerpf(lagoon_size, 1.06, k)
-		var color := Color(0.30, 0.72, 0.80).lerp(Color(0.66, 0.93, 0.88), k)
-		color.a = lerpf(0.10, 0.38, k)
-		_add_polygon(_scaled(shape, size), color)
-
 	_foam = Line2D.new()
-	_foam.points = _scaled(shape, 1.08)
+	_foam.points = _scaled(shape, 1.03)
 	_foam.closed = true
 	_foam.width = 3.0
-	_foam.default_color = Color(1, 1, 1, 0.5)
+	_foam.default_color = Color(1, 1, 1, 0.35)
 	_foam.antialiased = true
 	_foam.joint_mode = Line2D.LINE_JOINT_ROUND
 	_tag(_foam)
 
-	_add_polygon(_scaled(shape, 1.04), Color(0.78, 0.70, 0.50)) # våd sand
 	_add_polygon(shape, Color(0.94, 0.85, 0.62)) # sand
 	_add_polygon(_scaled(shape, 0.62), Color(0.45, 0.68, 0.35)) # græs
 	_add_polygon(_scaled(shape, 0.40), Color(0.38, 0.60, 0.30)) # tæt græs
@@ -118,6 +109,7 @@ func _make_shape(rng: RandomNumberGenerator) -> PackedVector2Array:
 	var p1 := rng.randf() * TAU
 	var p2 := rng.randf() * TAU
 	var p3 := rng.randf() * TAU
+	_phases = Vector3(p1, p2, p3)
 	var pts := PackedVector2Array()
 	for i in POINTS:
 		var a := TAU * i / POINTS
@@ -150,6 +142,14 @@ func _add_polygon(points: PackedVector2Array, color: Color, pos: Vector2 = Vecto
 	poly.position = pos
 	poly.antialiased = true
 	_tag(poly)
+
+
+## Data til hav-shaderen: [position + radius + lagune, formfaser].
+func get_shape_data() -> Array:
+	return [
+		Vector4(global_position.x, global_position.y, radius, lagoon_size),
+		Vector4(_phases.x, _phases.y, _phases.z, 0.0),
+	]
 
 
 func is_on_land(global_point: Vector2) -> bool:
