@@ -1,0 +1,26 @@
+# Godot 4
+.godot/
+.import/
+export.cfg
+export_credentials.cfg
+*.translation
+
+# Byggede spil
+builds/
+*.exe
+*.pck
+*.apk
+*.aab
+*.dmg
+
+# Mono/C# (hvis det tages i brug senere)
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.tmp
+.vscode/
+.idea/
