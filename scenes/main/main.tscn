@@ -1,8 +1,44 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/world/ocean.tscn" id="2_ocean"]
+[ext_resource type="PackedScene" path="res://scenes/world/island.tscn" id="3_island"]
+[ext_resource type="PackedScene" path="res://scenes/ship/ship.tscn" id="4_ship"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
 
 [node name="Main" type="Node2D"]
+script = ExtResource("1_main")
 
-[node name="Player" parent="." instance=ExtResource("1_player")]
-position = Vector2(320, 180)
+[node name="Ocean" parent="." instance=ExtResource("2_ocean")]
+
+[node name="Islands" type="Node2D" parent="."]
+
+[node name="Island1" parent="Islands" instance=ExtResource("3_island")]
+position = Vector2(320, -40)
+radius = 100.0
+seed_value = 3
+palm_count = 3
+
+[node name="Island2" parent="Islands" instance=ExtResource("3_island")]
+position = Vector2(-420, 420)
+radius = 160.0
+seed_value = 7
+palm_count = 7
+
+[node name="Island3" parent="Islands" instance=ExtResource("3_island")]
+position = Vector2(950, 520)
+radius = 70.0
+seed_value = 12
+palm_count = 2
+gull_count = 1
+
+[node name="Island4" parent="Islands" instance=ExtResource("3_island")]
+position = Vector2(150, -750)
+radius = 140.0
+seed_value = 21
+palm_count = 5
+gull_count = 3
+
+[node name="Ship" parent="." instance=ExtResource("4_ship")]
+
+[node name="HUD" parent="." instance=ExtResource("5_hud")]

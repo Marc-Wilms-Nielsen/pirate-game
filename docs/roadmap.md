@@ -7,11 +7,12 @@ man kan åbne og spille. Vi går ikke videre, før det føles godt.
 Målet er at bevise, at kernen er hyggelig: sejle, gå i land, loote, sælge, opgradere.
 
 ### M1 – Sejlads og stemning ⭐ (vigtigst)
-- [ ] Skib med inerti, langsom drejning og sejltrin
-- [ ] Hav: animeret vand-shader (bølger, skum ved skibet, kølvand)
-- [ ] Kamera, der følger blødt med
-- [ ] Lydkulisse: hav, måger, vind, knirken – lydstyrke følger fart
-- [ ] Én lille ø med strand, man kan sejle rundt om
+- [x] Skib med inerti, langsom drejning og sejltrin
+- [x] Hav: animeret vand-shader (bølger, glimt, kølvand)
+- [x] Kamera, der følger blødt med, zoomer ud ved fart og kigger frem
+- [x] Lydkulisse: hav, måger, vind, knirken – vindstyrke følger fart (syntetiske placeholders)
+- [x] Procedurelle øer med strand, skum, palmer og måger (4 stk.)
+- [ ] **Spiltest og justering** (fart, drejning, lyd, farver)
 - **Test:** Er det rart bare at sejle i 5 minutter? Hvis nej → justér, før vi går videre.
 
 ### M2 – I land og loot

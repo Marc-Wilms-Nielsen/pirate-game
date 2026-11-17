@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://scenes/world/ocean.gdshader" id="1_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
+shader = ExtResource("1_shader")
+
+[node name="Ocean" type="ColorRect"]
+z_index = -10
+material = SubResource("ShaderMaterial_ocean")
+offset_left = -6000.0
+offset_top = -6000.0
+offset_right = 6000.0
+offset_bottom = 6000.0
+mouse_filter = 2

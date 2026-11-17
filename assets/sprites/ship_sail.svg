@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="46" viewBox="0 0 16 46">
+  <!-- Råsejl set oppefra: buer fremad (mod højre), når vinden fylder det -->
+  <path d="M3 2 Q16 23 3 44 Z" fill="#f3ead2" stroke="#c9b98f" stroke-width="1"/>
+  <path d="M3 8 Q11 23 3 38" fill="none" stroke="#e2d6b5" stroke-width="1"/>
+  <rect x="1" y="1" width="3" height="44" rx="1.5" fill="#4a2c17"/>
+  <circle cx="2.5" cy="23" r="2" fill="#3b2414"/>
+</svg>

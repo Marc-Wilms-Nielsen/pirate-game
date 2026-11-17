@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/ship/ship.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ship_hull.svg" id="2_hull"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ship_sail.svg" id="3_sail"]
+
+[node name="Ship" type="CharacterBody2D"]
+motion_mode = 1
+script = ExtResource("1_script")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+top_level = true
+z_index = -1
+modulate = Color(0, 0, 0, 0.25)
+texture = ExtResource("2_hull")
+
+[node name="Hull" type="Sprite2D" parent="."]
+texture = ExtResource("2_hull")
+
+[node name="Sail" type="Sprite2D" parent="Hull"]
+position = Vector2(2, 0)
+texture = ExtResource("3_sail")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(29, 0, 18, -10, -27, -10, -28, 0, -27, 10, 18, 10)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.3, 1.3)
+position_smoothing_enabled = true
+position_smoothing_speed = 3.0

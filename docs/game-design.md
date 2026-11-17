@@ -66,8 +66,9 @@ Alle opgraderinger defineres som data (Godot Resources), så de kan balanceres u
 ## Kontroller (udkast)
 | Handling | Tastatur |
 |----------|----------|
-| Styr skib / gå | WASD / piletaster |
-| Sejl op/ned | W / S (på skib) |
+| Sejl op/ned (3 trin: nede / halv / fuld) | W / S |
+| Drej roret | A / D |
+| Gå (på land) | WASD / piletaster |
 | Affyr kanoner (venstre/højre) | Q / E |
 | Interager (gå i land, loot, handel) | F |
 | Angreb / skyd | Venstre / højre museknap |
