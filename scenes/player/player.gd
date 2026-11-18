@@ -308,16 +308,13 @@ func _draw() -> void:
 	var moving := clampf(velocity.length() / walk_speed, 0.0, 1.0)
 	var angle := _facing.angle()
 
+	# The captain's own look (Tailor) on top of the equipped hat and coat
+	var look := CaptainDrawer.current()
 	if on_land:
 		var step := sin(_time * 14.0) * moving
-		draw_circle(Vector2(2, 3), 6.0, Color(0, 0, 0, 0.2), true, -1.0, true) # skygge
-		# Fødder, der skiftes til at træde frem
-		var side := _facing.orthogonal() * 2.5
-		draw_circle(side + _facing * step * 2.5, 1.8, Color(0.25, 0.18, 0.12), true, -1.0, true)
-		draw_circle(-side - _facing * step * 2.5, 1.8, Color(0.25, 0.18, 0.12), true, -1.0, true)
-		_draw_coat(angle)
+		CaptainDrawer.draw_body(self, look, _facing, step)
 		_draw_sword(angle)
-		_draw_head(_facing * 1.0, angle, 1.0)
+		CaptainDrawer.draw_head(self, look, _facing * 1.0, _facing, 1.0, _time)
 	else:
 		# Ringe i vandet omkring svømmeren
 		for i in 3:
@@ -327,7 +324,7 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, 6.0, Color(0.05, 0.25, 0.40, 0.35), true, -1.0, true) # krop under vand
 		var bob := sin(_time * 3.0) * 0.4
 		_draw_sword(angle)
-		_draw_head(Vector2(0, bob), angle, 0.9)
+		CaptainDrawer.draw_head(self, look, Vector2(0, bob), _facing, 0.9, _time)
 	_draw_aim()
 	var gp := gather_progress()
 	if gp >= 0.0:
@@ -337,76 +334,6 @@ func _draw() -> void:
 		draw_line(_facing * 5.0, _facing * (9.0 + sin(gp * 25.0) * 2.0), Color(0.6, 0.45, 0.3), 1.5, true)
 	if _hurt_flash > 0.0:
 		draw_circle(Vector2.ZERO, 7.0, Color(1, 0.2, 0.2, 0.4 * _hurt_flash), true, -1.0, true)
-
-
-func _draw_head(pos: Vector2, angle: float, size: float) -> void:
-	draw_circle(pos, 3.5 * size + 0.6, OUTLINE, true, -1.0, true)
-	draw_circle(pos, 3.5 * size, Color(0.95, 0.78, 0.60), true, -1.0, true)
-	var hat: Dictionary = Catalog.GEAR[Game.equipped.get("hat", "tricorn")]["look"]
-	var col: Color = hat["color"]
-	var f := Vector2.from_angle(angle) * size
-	var side := f.orthogonal()
-	_draw_hat(pos, f, side, size, hat, col)
-	# Glans på hatten (lyset kommer oppefra til venstre)
-	draw_circle(pos + Vector2(-1.4, -1.6) * size, 1.1 * size, Color(1, 1, 1, 0.28), true, -1.0, true)
-
-
-func _draw_hat(pos: Vector2, f: Vector2, side: Vector2, size: float, hat: Dictionary, col: Color) -> void:
-	match hat["shape"]:
-		"straw":
-			draw_circle(pos, 6.0 * size, col, true, -1.0, true)
-			draw_arc(pos, 6.0 * size, 0.0, TAU, 24, col.darkened(0.25), 0.8, true)
-			draw_circle(pos, 3.0 * size, col.darkened(0.08), true, -1.0, true)
-			draw_arc(pos, 3.0 * size, 0.0, TAU, 20, Color(0.7, 0.2, 0.15), 0.9, true)
-		"bandana":
-			draw_circle(pos - f * 0.5, 3.4 * size, col, true, -1.0, true)
-			draw_line(pos - f * 3.0, pos - f * 6.0 + side * 1.5, col, 1.4, true) # knude
-			draw_line(pos - f * 3.0, pos - f * 6.0 - side * 1.5, col, 1.4, true)
-			draw_circle(pos - f * 0.5 + side * 1.6, 0.6, Color.WHITE, true, -1.0, true)
-		"bicorne":
-			var pts := PackedVector2Array([pos + side * 6.5, pos + f * 2.0, pos - side * 6.5, pos - f * 1.5])
-			draw_colored_polygon(pts, col)
-			draw_polyline(pts + PackedVector2Array([pts[0]]), OUTLINE, 0.6, true)
-			draw_circle(pos + f * 1.0, 0.9 * size, Color(0.95, 0.8, 0.3), true, -1.0, true)
-		_:
-			# Trekantet hat (evt. med fjer)
-			var tri := PackedVector2Array([pos + f * 3.5, pos - f * 2.5 - side * 3.8, pos - f * 1.2, pos - f * 2.5 + side * 3.8])
-			draw_colored_polygon(tri, col)
-			draw_polyline(tri + PackedVector2Array([tri[0]]), OUTLINE, 0.6, true)
-			draw_line(pos + f * 3.0, pos - f * 2.2 - side * 3.3, col.lightened(0.3), 0.5, true) # kantbånd
-			if hat["shape"] == "feather":
-				var plume := PackedVector2Array()
-				for i in 6:
-					var t := i / 5.0
-					plume.append(pos - f * (1.0 + t * 6.0) + side * (2.0 + sin(_time * 3.0 + t * 3.0) * 0.8))
-				draw_polyline(plume, hat["accent"], 2.0, true)
-				draw_circle(pos + f * 0.5, 0.9, Color(0.95, 0.8, 0.3), true, -1.0, true)
-
-
-func _draw_coat(angle: float) -> void:
-	var coat: Dictionary = Catalog.GEAR[Game.equipped.get("coat", "shirt")]["look"]
-	var col: Color = coat["color"]
-	var f := Vector2.from_angle(angle)
-	var side := f.orthogonal()
-	draw_circle(Vector2.ZERO, 5.7, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 5.0, col, true, -1.0, true)
-	draw_arc(Vector2.ZERO, 4.2, PI * 1.05, PI * 1.6, 8, Color(1, 1, 1, 0.3), 1.0, true) # glans
-	match coat["shape"]:
-		"striped":
-			for k in [-2.5, 0.0, 2.5]:
-				draw_line(side * k - f * 3.5 + side * 0.0, side * k + f * 1.0, coat["accent"], 1.0, true)
-		"coat":
-			draw_circle(-f * 1.0, 5.4, coat["accent"], true, -1.0, true)
-			draw_circle(Vector2.ZERO, 4.6, col, true, -1.0, true)
-			draw_line(f * 1.5 + side * 1.5, f * 4.0, coat["accent"], 0.9, true)
-			draw_line(f * 1.5 - side * 1.5, f * 4.0, coat["accent"], 0.9, true)
-		"buttons", "epaulettes":
-			for k in [-1.6, 1.6]:
-				draw_circle(f * 2.5 + side * k, 0.6, coat["accent"], true, -1.0, true)
-				draw_circle(f * 0.5 + side * k, 0.6, coat["accent"], true, -1.0, true)
-			if coat["shape"] == "epaulettes":
-				draw_circle(side * 4.6, 1.6, coat["accent"], true, -1.0, true)
-				draw_circle(-side * 4.6, 1.6, coat["accent"], true, -1.0, true)
 
 
 ## Nærkampsvåbnet: hviler ved siden af kaptajnen og svinger i en bue ved angreb.

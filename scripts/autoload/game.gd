@@ -47,6 +47,7 @@ var harbor_rep: Dictionary = {} ## fraktion -> samlet salg i guld (venskab). Gam
 var kingdom_wins: Dictionary = {} ## kongerige-id -> antal vundne dueller
 var kingdom_ready_at: Dictionary = {} ## kongerige-id -> unix-tid hvor det kan udfordres igen
 var visited_harbors: Dictionary = {} ## harbor name -> true: where you have docked (fast travel goes there)
+var captain_look: Dictionary = {} ## the captain's chosen look: part key -> option id (Catalog.CAPTAIN_STYLE_PARTS)
 var world_time: float = 0.3 ## tid på døgnet 0..1 (0 = midnat, 0.5 = middag) – gemmes
 var night: float = 0.0 ## 0 = dag, 1 = nat (sættes af Sky)
 var weather: String = "clear" ## sættes af Sky
@@ -95,6 +96,7 @@ func reset() -> void:
 	kingdom_wins = {}
 	kingdom_ready_at = {}
 	visited_harbors = {Catalog.HARBOR_NAMES["free"][0]: true} # the start harbor
+	captain_look = {}
 	world_time = 0.3
 	saved_ship_position = null
 	saved_harbor_name = ""
@@ -782,7 +784,7 @@ func notify(text: String, color := Color.WHITE) -> void:
 
 const _SAVED_FIELDS := ["gold", "cannonballs", "food", "crew", "user_zoom", "shot", "owned_weapons",
 	"grenades", "selected_weapon", "cargo", "owned_ships", "active_ship_index", "unlocked_cosmetics", "towed",
-	"owned_gear", "equipped", "tools", "repair_kits", "boxes", "captains", "captain_slots", "next_captain_id", "harbor_rep", "kingdom_wins", "kingdom_ready_at", "world_time", "visited_harbors"]
+	"owned_gear", "equipped", "tools", "repair_kits", "boxes", "captains", "captain_slots", "next_captain_id", "harbor_rep", "kingdom_wins", "kingdom_ready_at", "world_time", "visited_harbors", "captain_look"]
 
 
 ## Gemmer spillet. Kaldes automatisk (hvert minut, ved havn og når spillet lukkes).

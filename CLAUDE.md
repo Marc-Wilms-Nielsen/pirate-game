@@ -22,6 +22,7 @@
 - Game state (gold, cargo, ships, captains, harbor friendship) lives in the `Game` autoload (`scripts/autoload/game.gd`); sounds play via the `Sfx` autoload.
 - Log lines (loot, events) go through `Game.log_line()` / `Game.notify()` and show in the log bottom-left (L toggles it).
 - Ships are drawn in code by `scenes/ship/ship_drawer.gd` from `look` in the catalog. `tests/ship_lineup.tscn` shows all types side by side.
+- Customization: parts and palettes are `Catalog.SHIP_STYLE_PARTS` and `Catalog.CAPTAIN_STYLE_PARTS` (first option free, the rest bought once). A ship's choices live in its config and are turned into colours by `ShipDrawer.style_of(config)`; the captain's live in `Game.captain_look` and are drawn by `CaptainDrawer` (on land, at the helm and in the Tailor). The Looks and Tailor tabs use `StyleEditor` (scenes/ui/style_editor.gd). `tests/style_check.tscn` tests it.
 - Melee weapons are drawn by `scenes/player/weapon_art.gd` from their `look` (type, length, width, color).
 - Music is generated with `python3 tools/generate_music.py` (needs numpy and ffmpeg); sounds with `tools/generate_audio.py`.
 - `WorldSky` (scenes/world/sky.gd) runs day/night, weather and lanterns; `MusicDirector` (scenes/main/music.gd) the music.

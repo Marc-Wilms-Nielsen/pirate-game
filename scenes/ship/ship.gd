@@ -82,6 +82,7 @@ func _ready() -> void:
 	collision_layer = 4
 	collision_mask = 1 | 4
 	visual = ShipVisual.new()
+	visual.show_captain = true # you stand at the helm while sailing
 	visual.top_level = true
 	add_child(visual)
 	WorldSky.add_ship_lights(visual, 58.0, Color(1.0, 0.75, 0.42), 1.0)

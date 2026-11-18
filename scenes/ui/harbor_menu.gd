@@ -83,7 +83,7 @@ func _build() -> void:
 	_tabs = TabContainer.new()
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_tabs)
-	for page_name in ["Market", "Supplies", "Weapons", "Gear", "Shipyard", "Upgrades", "Captains", "Looks"]:
+	for page_name in ["Market", "Supplies", "Weapons", "Gear", "Shipyard", "Upgrades", "Captains", "Looks", "Tailor"]:
 		var content := VBoxContainer.new()
 		var scroll := UiTheme.scroll(content)
 		scroll.name = page_name
@@ -107,6 +107,7 @@ func _refresh() -> void:
 		"Upgrades": _build_upgrades(_pages["Upgrades"])
 		"Captains": _build_captains(_pages["Captains"])
 		"Looks": _build_looks(_pages["Looks"])
+		"Tailor": _build_tailor(_pages["Tailor"])
 
 
 # --- Marked -------------------------------------------------------------------
@@ -705,80 +706,31 @@ func _captain_row(box: VBoxContainer, c: Dictionary) -> void:
 	panel.add_child(HSeparator.new())
 
 
-# --- Udseende -------------------------------------------------------------------
+# --- Looks (the ship) and Tailor (the captain) ---------------------------------------------------
+# Both use StyleEditor: a live model, the parts, and the chosen part's palette. The editor is
+# built once and then only refreshed, so it keeps the part you are on and what you try on.
 
 func _build_looks(box: VBoxContainer) -> void:
+	_build_style_editor(box, Catalog.SHIP_STYLE_PARTS, Game.active_ship(), "", func() -> Control:
+		var model := ShipPreview.new(Game.active_ship()["type"], Game.active_ship())
+		model.detailed = true
+		return model)
+
+
+func _build_tailor(box: VBoxContainer) -> void:
+	_build_style_editor(box, Catalog.CAPTAIN_STYLE_PARTS, Game.captain_look, "cap_", func() -> Control:
+		return CaptainPreview.new())
+
+
+func _build_style_editor(box: VBoxContainer, parts: Array, values: Dictionary, prefix: String, make_model: Callable) -> void:
+	var existing: StyleEditor = null
+	for child in box.get_children():
+		if child is StyleEditor and not child.is_queued_for_deletion():
+			existing = child
+	if existing and is_same(existing.target, values):
+		existing.refresh()
+		return
 	UiTheme.clear(box)
-	var config := Game.active_ship()
-	_color_row(box, "Sail color", "sail", Catalog.SAIL_COLORS, config)
-	_color_row(box, "Hull paint", "hull", Catalog.HULL_PAINTS, config)
-	_color_row(box, "Flag color", "flag", Catalog.FLAG_COLORS, config)
-	_flag_style_row(box, config)
-	box.add_child(HSeparator.new())
-	box.add_child(UiTheme.label("Decorations", 10, UiTheme.ACCENT))
-	for id in Catalog.DECORATIONS:
-		var deco: Dictionary = Catalog.DECORATIONS[id]
-		var unlocked: bool = Game.unlocked_cosmetics.get("deco:" + id, false)
-		var on: bool = config["decorations"].get(id, false)
-		var row := HBoxContainer.new()
-		box.add_child(row)
-		var l := UiTheme.label(deco["name"])
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(l)
-		if unlocked:
-			row.add_child(UiTheme.button("Remove" if on else "Add", func() -> void:
-				config["decorations"][id] = not on
-				Game.changed.emit()))
-		else:
-			row.add_child(UiTheme.button("Buy (%d)" % deco["price"], func() -> void:
-				if Game.spend(deco["price"]):
-					Game.unlocked_cosmetics["deco:" + id] = true
-					config["decorations"][id] = true
-					Game.changed.emit(), Game.gold >= deco["price"]))
-
-
-func _flag_style_row(box: VBoxContainer, config: Dictionary) -> void:
-	box.add_child(UiTheme.label("Flag style (prestige)", 10, UiTheme.ACCENT))
-	var row := HFlowContainer.new()
-	box.add_child(row)
-	for st in Catalog.FLAG_STYLES:
-		var unlock_key := "flagstyle:%s" % st["id"]
-		var unlocked: bool = Game.unlocked_cosmetics.get(unlock_key, false) or st["price"] == 0
-		var selected: bool = config.get("flag_style", "small") == st["id"]
-		var text: String = st["name"] if unlocked else "%s (%d)" % [st["name"], st["price"]]
-		if selected:
-			text = "✓ " + text
-		row.add_child(UiTheme.button(text, func() -> void:
-			if not unlocked:
-				if not Game.spend(st["price"]):
-					return
-				Game.unlocked_cosmetics[unlock_key] = true
-			config["flag_style"] = st["id"]
-			config["decorations"]["flag"] = true
-			Game.changed.emit(), unlocked or Game.gold >= st["price"]))
-
-
-func _color_row(box: VBoxContainer, title: String, key: String, options: Array, config: Dictionary) -> void:
-	box.add_child(UiTheme.label(title, 10, UiTheme.ACCENT))
-	var row := HBoxContainer.new()
-	box.add_child(row)
-	for opt in options:
-		var unlock_key := "%s:%s" % [key, opt["id"]]
-		var unlocked: bool = Game.unlocked_cosmetics.get(unlock_key, false) or opt["price"] == 0
-		var selected: bool = config[key] == opt["id"]
-		var text: String = opt["name"] if unlocked else "%s (%d)" % [opt["name"], opt["price"]]
-		if selected:
-			text = "✓ " + text
-		var b := UiTheme.button(text, func() -> void:
-			if not unlocked:
-				if not Game.spend(opt["price"]):
-					return
-				Game.unlocked_cosmetics[unlock_key] = true
-			config[key] = opt["id"]
-			Game.changed.emit(), unlocked or Game.gold >= opt["price"])
-		var swatch := ColorRect.new()
-		swatch.color = opt["color"] if key != "hull" else Color(0.6, 0.42, 0.25) * opt["color"]
-		swatch.custom_minimum_size = Vector2(8, 8)
-		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(swatch)
-		row.add_child(b)
+	var editor := StyleEditor.new()
+	box.add_child(editor)
+	editor.setup(parts, values, make_model.call(), prefix)

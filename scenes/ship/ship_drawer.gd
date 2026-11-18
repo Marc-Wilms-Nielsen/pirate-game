@@ -52,11 +52,33 @@ static func scaled(points: PackedVector2Array, factor: Vector2) -> PackedVector2
 
 
 ## Skrog, dæk, planker, kahyt og årer.
-static func draw_hull(ci: CanvasItem, look: Dictionary, paint: Color, time: float, oar_speed: float) -> void:
+## All the colours and shapes a ship's config has chosen (Catalog.SHIP_STYLE_PARTS), with
+## "as built" parts left as null so the ship type's own look is used. Enemy ships have no style
+## keys and get the defaults.
+static func style_of(config: Dictionary) -> Dictionary:
+	var pick := func(options: Array, key: String) -> Dictionary: return Catalog.style_option(options, String(config.get(key, "")))
+	return {
+		"sail": pick.call(Catalog.SAIL_COLORS, "sail")["color"],
+		"hull": pick.call(Catalog.HULL_PAINTS, "hull")["color"],
+		"flag": pick.call(Catalog.FLAG_COLORS, "flag")["color"],
+		"flag_style": String(config.get("flag_style", "small")),
+		"emblem": pick.call(Catalog.SAIL_EMBLEMS, "emblem").get("shape", ""),
+		"emblem_color": pick.call(Catalog.EMBLEM_COLORS, "emblem_color")["color"],
+		"stripe": pick.call(Catalog.HULL_STRIPES, "stripe").get("color", null),
+		"deck": pick.call(Catalog.DECK_COLORS, "deck").get("color", null),
+		"rail": pick.call(Catalog.RAIL_COLORS, "rail").get("color", null),
+		"cabin": pick.call(Catalog.CABIN_COLORS, "cabin_color").get("color", null),
+		"cannon": pick.call(Catalog.CANNON_COLORS, "cannon_color")["color"],
+		"lantern": pick.call(Catalog.LANTERN_COLORS, "lantern")["color"],
+		"wake": pick.call(Catalog.WAKE_COLORS, "wake")["color"],
+	}
+
+
+static func draw_hull(ci: CanvasItem, look: Dictionary, paint: Color, time: float, oar_speed: float, style := {}) -> void:
 	var length: float = look["length"]
 	var beam: float = look["beam"]
 	var hull_col: Color = look["hull"] * paint
-	var deck_col: Color = look["deck"]
+	var deck_col: Color = look["deck"] if style.get("deck") == null else style["deck"]
 	var pts := hull_points(look)
 
 	if look.get("oars", false):
@@ -81,8 +103,11 @@ static func draw_hull(ci: CanvasItem, look: Dictionary, paint: Color, time: floa
 	if lit.size() >= 3:
 		ci.draw_polyline(lit, hull_col.lightened(0.22), 1.0, true)
 	ci.draw_polyline(scaled(pts, Vector2(0.9, 0.75)), hull_col.darkened(0.3), 0.8, true) # bord/barkholt
+	if style.get("stripe") != null: # a painted stripe along the hull side
+		ci.draw_polyline(scaled(pts, Vector2(0.925, 0.795)), style["stripe"], 1.1, true)
 	ci.draw_colored_polygon(scaled(pts, Vector2(0.86, 0.66)), deck_col)
-	ci.draw_polyline(scaled(pts, Vector2(0.86, 0.66)), Color(0.95, 0.85, 0.65, 0.5), 0.6, true) # ræling
+	var rail: Color = Color(0.95, 0.85, 0.65, 0.5) if style.get("rail") == null else style["rail"]
+	ci.draw_polyline(scaled(pts, Vector2(0.86, 0.66)), rail, 0.6 if style.get("rail") == null else 0.9, true) # ræling
 	# Dækplanker med forskudte samlinger
 	var plank := deck_col.darkened(0.15)
 	var rows := 5
@@ -109,13 +134,76 @@ static func draw_hull(ci: CanvasItem, look: Dictionary, paint: Color, time: floa
 	if look.get("cabin", false):
 		var cw := beam * 1.1
 		var r := Rect2(-length * 0.5 + 3.0, -cw * 0.5, length * 0.16, cw)
+		var cabin_col: Color = hull_col.lightened(0.12) if style.get("cabin") == null else style["cabin"]
 		ci.draw_rect(r.grow(1.0), OUTLINE)
-		ci.draw_rect(r, hull_col.lightened(0.12))
-		ci.draw_line(Vector2(r.position.x, 0), Vector2(r.end.x, 0), hull_col.darkened(0.2), 1.0, true)
+		ci.draw_rect(r, cabin_col)
+		ci.draw_line(Vector2(r.position.x, 0), Vector2(r.end.x, 0), cabin_col.darkened(0.25), 1.0, true)
+
+
+## Where the captain stands: at the wheel, just in front of the cabin (or near the stern).
+static func helm_position(look: Dictionary) -> Vector2:
+	var length: float = look["length"]
+	return Vector2(-length * (0.27 if look.get("cabin", false) else 0.36), 0)
+
+
+## The ship's wheel at the helm (drawn under the captain).
+static func draw_helm(ci: CanvasItem, look: Dictionary) -> void:
+	var p := helm_position(look) + Vector2(4.5, 0)
+	ci.draw_line(p + Vector2(0, -3.2), p + Vector2(0, 3.2), Color(0.32, 0.2, 0.1), 1.6, true)
+	for k in [-3.4, -1.7, 0.0, 1.7, 3.4]:
+		ci.draw_line(p + Vector2(-0.6, k), p + Vector2(0.9, k), Color(0.45, 0.3, 0.16), 0.6, true)
 
 
 ## Sejl. factor: 0 = sejlene er bjærget, 1 = fulde sejl.
-static func draw_sails(ci: CanvasItem, look: Dictionary, sail_col: Color, factor: float, time: float) -> void:
+static func draw_sails(ci: CanvasItem, look: Dictionary, sail_col: Color, factor: float, time: float, emblem := "", emblem_col := Color(0.12, 0.12, 0.13)) -> void:
+	_draw_sails(ci, look, sail_col, factor, time)
+	if emblem != "" and factor > 0.3:
+		# In the middle of the first sail (no draw transform here: the caller's must be kept)
+		var mx := float(look["masts"][0]) * float(look["length"])
+		var bulge := (2.0 + 6.0 * factor) * 0.55
+		draw_emblem(ci, Vector2(mx + bulge, 0), float(look["beam"]) * 0.36, emblem, Color(emblem_col, 0.85))
+
+
+## A sail emblem of radius r. Shapes: skull, sun, compass, anchor, swords, star.
+static func draw_emblem(ci: CanvasItem, c: Vector2, r: float, shape: String, col: Color) -> void:
+	match shape:
+		"skull":
+			ci.draw_circle(c + Vector2(0, -r * 0.15), r * 0.62, col, true, -1.0, true)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.35, r * 0.3), Vector2(r * 0.7, r * 0.35)), col)
+			var hole := Color(1, 1, 1, 0.55)
+			ci.draw_circle(c + Vector2(-r * 0.24, -r * 0.2), r * 0.16, hole, true, -1.0, true)
+			ci.draw_circle(c + Vector2(r * 0.24, -r * 0.2), r * 0.16, hole, true, -1.0, true)
+			for k in [-1.0, 1.0]: # crossbones
+				ci.draw_line(c + Vector2(-r, r * k), c + Vector2(r, -r * k), col, r * 0.18, true)
+		"sun":
+			ci.draw_circle(c, r * 0.45, col, true, -1.0, true)
+			for i in 10:
+				var a := TAU * i / 10.0
+				ci.draw_line(c + Vector2.from_angle(a) * r * 0.6, c + Vector2.from_angle(a) * r, col, r * 0.12, true)
+		"compass":
+			ci.draw_arc(c, r * 0.85, 0.0, TAU, 24, col, r * 0.1, true)
+			for i in 4:
+				var a := TAU * i / 4.0
+				ci.draw_colored_polygon(PackedVector2Array([c + Vector2.from_angle(a) * r, c + Vector2.from_angle(a + 0.6) * r * 0.22,
+					c + Vector2.from_angle(a - 0.6) * r * 0.22]), col)
+		"anchor":
+			ci.draw_line(c + Vector2(0, -r * 0.85), c + Vector2(0, r * 0.75), col, r * 0.16, true)
+			ci.draw_line(c + Vector2(-r * 0.45, -r * 0.5), c + Vector2(r * 0.45, -r * 0.5), col, r * 0.14, true)
+			ci.draw_arc(c + Vector2(0, r * 0.2), r * 0.6, 0.15, PI - 0.15, 12, col, r * 0.16, true)
+			ci.draw_arc(c + Vector2(0, -r * 0.95), r * 0.18, 0.0, TAU, 10, col, r * 0.1, true)
+		"swords":
+			for k in [-1.0, 1.0]:
+				ci.draw_line(c + Vector2(-r * 0.8 * k, r * 0.8), c + Vector2(r * 0.75 * k, -r * 0.85), col, r * 0.12, true)
+				ci.draw_line(c + Vector2(-r * 0.5 * k - r * 0.25, r * 0.35), c + Vector2(-r * 0.5 * k + r * 0.25, r * 0.65), col, r * 0.12, true)
+		"star":
+			var pts := PackedVector2Array()
+			for i in 10:
+				var a := -PI * 0.5 + TAU * i / 10.0
+				pts.append(c + Vector2.from_angle(a) * (r if i % 2 == 0 else r * 0.42))
+			ci.draw_colored_polygon(pts, col)
+
+
+static func _draw_sails(ci: CanvasItem, look: Dictionary, sail_col: Color, factor: float, time: float) -> void:
 	var length: float = look["length"]
 	var beam: float = look["beam"]
 	var masts: Array = look["masts"]
@@ -271,16 +359,17 @@ static func cannon_positions(look: Dictionary, count: int, side: String) -> Arra
 	return out
 
 
-static func draw_cannons(ci: CanvasItem, look: Dictionary, count: int, recoil: Dictionary) -> void:
+static func draw_cannons(ci: CanvasItem, look: Dictionary, count: int, recoil: Dictionary, barrel := Color(0.15, 0.15, 0.17)) -> void:
 	for side in ["left", "right"]:
 		var out_dir := Vector2.UP if side == "left" else Vector2.DOWN
 		for p in cannon_positions(look, count, side):
 			var base: Vector2 = p - out_dir * float(recoil.get(side, 0.0)) * 2.0
-			ci.draw_line(base, base + out_dir * 4.5, Color(0.15, 0.15, 0.17), 2.6, true)
+			ci.draw_line(base, base + out_dir * 4.5, barrel, 2.6, true)
+			ci.draw_line(base + out_dir * 1.0, base + out_dir * 4.0, barrel.lightened(0.25), 0.6, true) # shine
 			ci.draw_circle(base, 1.8, Color(0.3, 0.22, 0.15), true, -1.0, true)
 
 
-static func draw_decorations(ci: CanvasItem, look: Dictionary, decorations: Dictionary, flag_col: Color, time: float, over_sails: bool, flag_style := "small") -> void:
+static func draw_decorations(ci: CanvasItem, look: Dictionary, decorations: Dictionary, flag_col: Color, time: float, over_sails: bool, flag_style := "small", lantern := Color(1.0, 0.8, 0.3)) -> void:
 	var length: float = look["length"]
 	var beam: float = look["beam"]
 	var mast := Vector2(float(look["masts"][0]) * length, 0)
@@ -292,8 +381,8 @@ static func draw_decorations(ci: CanvasItem, look: Dictionary, decorations: Dict
 			var glow := 0.35 + 0.15 * sin(time * 3.0)
 			for y in [-beam * 0.65, beam * 0.65]:
 				var lp := Vector2(-length * 0.45, y)
-				ci.draw_circle(lp, 3.5, Color(1.0, 0.8, 0.3, glow * 0.5), true, -1.0, true)
-				ci.draw_circle(lp, 1.4, Color(1.0, 0.9, 0.5), true, -1.0, true)
+				ci.draw_circle(lp, 3.5, Color(lantern, glow * 0.5), true, -1.0, true)
+				ci.draw_circle(lp, 1.4, lantern.lightened(0.4), true, -1.0, true)
 		return
 	if decorations.get("crows_nest", false):
 		ci.draw_circle(mast, 3.2, Color(0.45, 0.3, 0.18), true, -1.0, true)

@@ -217,6 +217,14 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Bug: dragging a volume slider shrank a maximized window – every settings change set the window mode to "windowed" again. Now the window is only touched when Display or V-Sync really changes
 - [x] tests/anchor_check.tscn and tests/settings_check.tscn
 
+## Round 17 – Customization
+- [x] The captain stands at the helm while you sail (hidden while he is ashore)
+- [x] New Looks (ship) and Tailor (captain) tabs: a live model, the list of parts and a palette; try an option on the model before buying it
+- [x] Ship: 17 parts – sails, sail emblem and its colour, hull paint, hull stripe, deck planks, railing, cabin, cannons, flag colour and style, lantern light, wake colour and the four decorations
+- [x] Captain: 13 parts – skin, hair style and colour, beard and colour, eye patch, earring, hat colour, coat colour and trim, sash, trousers, boots (hat and coat keep their gear shape)
+- [x] Paid as before: the first option of each part is free, the rest are bought once; earlier purchases are kept
+- [x] tests/style_check.tscn
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne
