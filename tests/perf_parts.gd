@@ -11,6 +11,7 @@ func _ready() -> void:
 	OS.low_processor_usage_mode_sleep_usec = 0
 	Settings.max_fps = 0
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Game.use_test_files() # never touch the real save or settings
 	Game.delete_save()
 	Game.reset()
 	main = load("res://scenes/main/main.tscn").instantiate()

@@ -16,6 +16,8 @@ var speed: float = 0.0
 var state: String = "wander" ## wander, attack, flee
 var crew: int = 8
 var plundered := false ## overgivet efter en entring – kan ikke entres igen
+var boss_quest: String = "" ## set for quest bosses: sinking or capturing it completes that quest's goal
+var hp_mult: float = 1.0 ## quest bosses are tougher than normal ships
 var _provoked: float = 0.0 ## skudt på: slår igen, også i strandvandet
 var _board_cooldown: float = 8.0 ## pirater venter lidt før de forsøger at entre
 const CREW_LOSS_PER_DAMAGE := 1.0 / 12.0 ## kanonskud dræber også besætning
@@ -41,6 +43,7 @@ func _ready() -> void:
 	if config.is_empty():
 		setup("merchant", "")
 	stats = Game.ship_stats(config)
+	stats["max_hp"] = float(stats["max_hp"]) * hp_mult
 	hp = stats["max_hp"]
 	var collision := CollisionPolygon2D.new()
 	collision.polygon = ShipVisual.collision_for(config["type"])
@@ -258,6 +261,16 @@ func surrender() -> void:
 	_visual.apply_config(config)
 	remove_from_group("enemies")
 	add_to_group("surrendered")
+	_quest_boss_beaten()
+
+
+## A quest boss counts as beaten when sunk or captured, and drops a good haul either way.
+func _quest_boss_beaten() -> void:
+	if boss_quest == "":
+		return
+	Game.give_loot("quest_boss", global_position)
+	Quests.boss_defeated(boss_quest)
+	boss_quest = ""
 
 
 func take_damage(amount: float, _from: Vector2) -> void:
@@ -285,6 +298,7 @@ func take_damage(amount: float, _from: Vector2) -> void:
 func _sink() -> void:
 	_sinking = true
 	remove_from_group("enemies")
+	_quest_boss_beaten()
 	collision_layer = 0
 	Sfx.play_at("splash", global_position)
 	Fx.ship_explodes(self, length())

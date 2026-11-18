@@ -12,7 +12,7 @@ signal pirate_boarding(enemy: Node2D) ## en pirat har lagt sig op ad og entrer d
 @warning_ignore("unused_signal") # udsendes af kaptajnen ved slotsporten
 signal duel_requested(castle: Node2D) ## kaptajnen udfordrer et kongerige
 
-const SAVE_PATH := "user://save.dat"
+var save_path := "user://save.dat" ## tests switch to their own file (use_test_files)
 const SAVE_VERSION := 3 ## 2: opgraderinger har 100 trin. 3: 10x større verden
 
 const START_GOLD := 1000000 ## MIDLERTIDIGT til test – sæt tilbage til 150
@@ -517,7 +517,7 @@ func item_name(id: String) -> String:
 
 ## Slår en loot-tabel op, giver spilleren tingene og viser dem som popups.
 func give_loot(table_id: String, world_pos: Vector2) -> void:
-	var table: Dictionary = Catalog.LOOT[table_id]
+	var table: Dictionary = Catalog.LOOT[table_id] if Catalog.LOOT.has(table_id) else Catalog.QUEST_LOOT[table_id]
 	var messages: Array[String] = []
 	var icons: Array[String] = []
 	var g: Array = table["gold"]
@@ -795,15 +795,15 @@ func save_game() -> void:
 		data["last_harbor"] = (last_harbor as Harbor).harbor_name
 	for extra in _extra_savers:
 		extra.call(data)
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
 		file.store_string(var_to_str(data))
 
 
 func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(save_path):
 		return false
-	var text := FileAccess.get_file_as_string(SAVE_PATH)
+	var text := FileAccess.get_file_as_string(save_path)
 	var data = str_to_var(text)
 	if typeof(data) != TYPE_DICTIONARY:
 		push_warning("Could not read the saved game")
@@ -844,8 +844,15 @@ func load_game() -> bool:
 
 
 func delete_save() -> void:
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
+
+
+## Tests call this first: from then on they save, load and delete their own files and never
+## touch the player's real save game or settings.
+func use_test_files() -> void:
+	save_path = "user://test_save.dat"
+	Settings.config_path = "user://test_settings.cfg"
 
 
 ## Andre systemer (f.eks. hjemøen) kan tilføje deres egne data til gemningen.

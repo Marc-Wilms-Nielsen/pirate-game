@@ -34,6 +34,7 @@ var _escort_sync_pending := false
 var _castle_spots: Array[Vector2] = [] ## ingen træer eller kister lige ved slottene
 var _streamer: WorldStreamer
 var _seabed: Seabed
+var _quest_dialog: QuestDialog
 var _place_grid: Dictionary = {} ## bruges kun mens øerne placeres
 var _player: PlayerCharacter = null
 var _spawn_timer: float = 0.0
@@ -74,6 +75,13 @@ func _ready() -> void:
 	add_child(layers)
 	move_child(layers, $Ocean.get_index())
 	layers.setup($Ocean as ColorRect, _seabed)
+	# Main quest line: marks over harbors, bosses, and the chat window with the quest givers
+	var quest_world := QuestWorld.new()
+	quest_world.name = "QuestWorld"
+	add_child(quest_world)
+	_quest_dialog = QuestDialog.new()
+	_quest_dialog.name = "QuestDialog"
+	add_child(_quest_dialog)
 	if Settings.needs_auto_quality:
 		var auto := AutoQuality.new()
 		auto.name = "AutoQuality"
@@ -574,8 +582,18 @@ func _on_dock_requested(harbor: Harbor) -> void:
 		_home_menu.call("open")
 		return
 	Game.last_harbor = harbor
-	_harbor_menu.call("open", harbor)
 	Game.save_game()
+	# Quest givers talk first ("!" = new quest, "?" = hand in). Handing one in can lead
+	# straight to the next offer at the same harbor; declining goes on to the harbor menu.
+	var talk := Quests.talk_at(harbor.harbor_name)
+	while not talk.is_empty():
+		_quest_dialog.open(talk)
+		var result: String = await _quest_dialog.closed
+		Game.save_game()
+		if result == "decline":
+			break
+		talk = Quests.talk_at(harbor.harbor_name)
+	_harbor_menu.call("open", harbor)
 
 
 func _on_harbor_closed() -> void:

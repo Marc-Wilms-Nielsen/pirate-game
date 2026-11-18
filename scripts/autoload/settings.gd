@@ -3,7 +3,7 @@ extends Node
 
 signal changed
 
-const PATH := "user://settings.cfg"
+var config_path := "user://settings.cfg" ## tests switch to their own file (Game.use_test_files)
 const BUSES := ["Ambience", "SFX", "Music"]
 const FPS_OPTIONS := [30, 60, 120, 144, 0] ## 0 = ubegrænset
 
@@ -86,12 +86,12 @@ func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	for key in _keys():
 		cfg.set_value("settings", key, get(key))
-	cfg.save(PATH)
+	cfg.save(config_path)
 
 
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(PATH) != OK:
+	if cfg.load(config_path) != OK:
 		needs_auto_quality = not auto_quality_done
 		return
 	for key in _keys():

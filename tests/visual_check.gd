@@ -7,6 +7,7 @@ var main: Node
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Game.use_test_files() # never touch the real save or settings
 	Game.delete_save()
 	Game.reset()
 	main = load("res://scenes/main/main.tscn").instantiate()

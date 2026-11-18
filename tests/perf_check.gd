@@ -14,6 +14,7 @@ func _ready() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	OS.low_processor_usage_mode = false
 	OS.low_processor_usage_mode_sleep_usec = 0
+	Game.use_test_files() # never touch the real save or settings
 	Game.delete_save()
 	Game.reset()
 	var t0 := Time.get_ticks_msec()
