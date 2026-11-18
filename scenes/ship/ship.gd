@@ -21,7 +21,7 @@ const HUNGRY_SPEED := 0.75 ## fart-faktor når maden er sluppet op
 @export var deceleration: float = 9.0 ## Hvor hurtigt farten falder (lav = lang glidning)
 @export_range(0.0, 1.0) var min_turn_factor: float = 0.3 ## Drejeevne når skibet står stille
 @export var turn_smoothing: float = 3.0
-@export var anchor_brake: float = 30.0
+@export var anchor_brake: float = 7.2 ## steady drag of the anchor on the seabed (low: a long, gentle stop; the chain adds the rest)
 @export var disembark_max_speed: float = 2.0
 @export var dock_max_speed: float = 35.0
 
@@ -47,10 +47,13 @@ var _chain_length := 0.0 ## how far the chain reaches from the anchor (set when 
 var _anchor_down := false ## the anchor lies on the seabed at _anchor_point (false = not placed yet)
 const ANCHOR_SIDE_OFFSET := 18.0 ## the anchor goes over the side at the bow, not straight ahead
 const CHAIN_SLACK := 30.0 ## px of chain that let the ship run on freely after the drop
-const CHAIN_PER_SPEED := 0.9 ## more chain runs out the faster you are going
-const DRAG_TURN := 2.6 ## how quickly the chain bends your course towards the anchor
-const SWING_RATE := 1.3 ## how quickly the bow turns to face the anchor
-const MAX_SWING := 1.1 ## rad/s: the fastest the chain may turn the ship (smooth, no jolt)
+const CHAIN_PER_SPEED := 2.2 ## more chain runs out the faster you are going (a long, gentle stop)
+const CHAIN_WEIGHT := 4.0 ## px/s²: the chain's own weight pulls gently towards the anchor all the time
+const ELASTIC_K := 0.35 ## px/s² per px the chain is stretched: an elastic pull that builds up softly
+const ELASTIC_DAMP := 1.6 ## damps the chain's stretch, so the ship doesn't bounce on it
+const CHAIN_HARD_LIMIT := 2.0 ## x chain length: beyond this the chain holds you back firmly
+const SWING_RATE := 1.0 ## how quickly the bow turns to face the anchor
+const MAX_SWING := 0.7 ## rad/s: the fastest the chain may turn the ship
 var _food_timer: float = 0.0
 var _shake: float = 0.0
 var _sink_progress: float = 0.0
@@ -379,10 +382,15 @@ func _drop_anchor_here() -> void:
 	_anchor_down = true
 
 
-## The anchor lies on the seabed off one side of the bow. While the ship brakes smoothly, the
-## chain drags it towards that side: the course bends towards the anchor (more the more the
-## chain is stretched), and the bow slowly turns to face it, so the ship curves in towards the
-## anchor instead of drifting straight on. The chain gives like a spring if you run far past it.
+## The anchor lies on the seabed off one side of the bow, and the chain behaves like an elastic
+## line. Forces act on the ship's velocity (never on its position), so every pull builds up
+## softly:
+## - the anchor drags steadily along the seabed (anchor_brake, applied in _physics_process)
+## - the chain's own weight pulls gently towards the anchor all the time, so the course starts
+##   bending towards the anchor's side right away
+## - once the chain is stretched past its length it pulls like an elastic band (ELASTIC_K per px)
+##   with damping (ELASTIC_DAMP), so the ship is eased round towards the anchor and doesn't bounce
+## - the bow turns to face the anchor as the chain tightens, never faster than MAX_SWING
 func _anchor_chain(delta: float) -> void:
 	if not _anchor_down:
 		_drop_anchor_here() # anchored some other way than the key: the anchor lands right here
@@ -392,21 +400,28 @@ func _anchor_chain(delta: float) -> void:
 	if d < 1.0:
 		return
 	var dir := to_anchor / d
-	var stretch := clampf((d - CHAIN_SLACK) / maxf(_chain_length - CHAIN_SLACK, 1.0), 0.0, 1.5)
-	if speed > 2.0:
-		# The course is dragged towards the anchor's side: a little at once, much more as the
-		# chain stretches
-		var pull := 0.35 + stretch
-		_move_dir = _move_dir.slerp(dir, 1.0 - exp(-DRAG_TURN * pull * delta)).normalized()
-	# The bow turns to face the anchor once the chain is stretched – eased, and never faster
-	# than MAX_SWING, so even passing right over the anchor stays smooth
-	if stretch > 0.0:
-		var diff := angle_difference(rotation, dir.angle())
-		var turn := clampf(diff * SWING_RATE * minf(stretch, 1.0), -MAX_SWING, MAX_SWING)
+	var vel := _move_dir * speed
+	var stretch := maxf(d - _chain_length, 0.0)
+	if speed > 1.0 or stretch > 0.0:
+		var pull := CHAIN_WEIGHT + ELASTIC_K * stretch
+		vel += dir * pull * delta
+		if stretch > 0.0:
+			# Damping: the part of the motion along the chain is eased away, so it doesn't bounce
+			var along := vel.dot(dir)
+			vel -= dir * along * minf(ELASTIC_DAMP * delta, 1.0)
+		# Far past the end of the chain it holds firmly (a safety limit, still on the velocity)
+		if d > _chain_length * CHAIN_HARD_LIMIT:
+			var away := vel.dot(-dir)
+			if away > 0.0:
+				vel += dir * away
+		speed = vel.length()
+		if speed > 0.01:
+			_move_dir = vel / speed
+	# The bow turns to face the anchor as the chain takes the strain
+	var tension := clampf((d - _chain_length * 0.5) / maxf(_chain_length * 0.5, 1.0), 0.0, 1.0)
+	if tension > 0.0:
+		var turn := clampf(angle_difference(rotation, dir.angle()) * SWING_RATE * tension, -MAX_SWING, MAX_SWING)
 		rotation += turn * delta
-	# Past the end of the chain it holds you back softly, like a spring – never a hard jolt
-	if d > _chain_length:
-		global_position += dir * (d - _chain_length) * (1.0 - exp(-4.0 * delta))
 
 
 func _process(delta: float) -> void:
@@ -443,9 +458,14 @@ func _update_anchor_visuals() -> void:
 	var from := to_global(Vector2(24, 0) * stats["size"])
 	var span := from.distance_to(_anchor_point)
 	var slack := maxf(_chain_length - span, 0.0)
-	if slack > 2.0 and span > 1.0: # loose chain: it sags to one side until it is stretched
+	if slack > 2.0 and span > 1.0: # loose chain: it hangs in a soft curve until it is stretched
 		var side := (_anchor_point - from).orthogonal().normalized()
-		_rope.points = PackedVector2Array([from, (from + _anchor_point) * 0.5 + side * minf(slack * 0.4, 18.0), _anchor_point])
+		var mid := (from + _anchor_point) * 0.5 + side * minf(slack * 0.25, 22.0)
+		var pts := PackedVector2Array()
+		for i in 13: # a smooth curve through from, mid and the anchor
+			var t := i / 12.0
+			pts.append(from.lerp(mid, t).lerp(mid.lerp(_anchor_point, t), t))
+		_rope.points = pts
 	else:
 		_rope.points = PackedVector2Array([from, _anchor_point])
 	_buoy.global_position = _anchor_point

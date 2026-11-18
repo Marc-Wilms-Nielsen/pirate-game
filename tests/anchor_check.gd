@@ -28,7 +28,9 @@ func _ready() -> void:
 	# 1. Full speed, no steering: the anchor goes over starboard (to the right of the heading)
 	var r := await _drop_at_speed(ship, spot, "", "a1")
 	_check(r["lateral"] > 25.0, "the ship is dragged towards the anchor's side (starboard), %d px off a straight line" % int(r["lateral"]))
-	_check(r["max_brake"] < ship.anchor_brake * 1.5, "smooth braking: at most %.0f px/s² (no sudden stop)" % r["max_brake"])
+	_check(r["max_brake"] < 18.0, "smooth braking: at most %.0f px/s² (the old anchor braked at 30)" % r["max_brake"])
+	# The old anchor stopped a ship at full speed in about 75 px: now about three times as far
+	_check(r["path"] > 200.0 and r["path"] < 280.0, "braking distance about 3x the old 75 px: %d px" % int(r["path"]))
 	_check(r["max_turn"] < 2.0, "smooth turn: at most %.2f rad/s (no jolt)" % r["max_turn"])
 	_check(r["end_speed"] < 6.0, "the anchor stops the ship (%.0f px/s left)" % r["end_speed"])
 	_check(r["facing"] > 0.5, "the ship ends up with its bow towards the anchor")
@@ -81,21 +83,32 @@ func _drop_at_speed(ship: PlayerShip, spot: Vector2, steer: String, shot: String
 	var max_turn := 0.0
 	var last_speed := ship.speed
 	var last_rot := ship.rotation
-	for i in 300: # 5 s
+	var last_pos := ship.global_position
+	var path := 0.0 ## how far the ship travels from the drop until it stops (braking distance)
+	var stopped_after := -1.0
+	var lateral := 0.0
+	for i in 1200: # up to 20 s
 		await get_tree().physics_frame
 		var dt := 1.0 / 60.0
 		max_brake = maxf(max_brake, (last_speed - ship.speed) / dt)
 		max_turn = maxf(max_turn, absf(angle_difference(last_rot, ship.rotation)) / dt)
+		path += ship.global_position.distance_to(last_pos)
 		last_speed = ship.speed
 		last_rot = ship.rotation
-		if i == 90:
+		last_pos = ship.global_position
+		if absf(ship.global_position.y - start.y) > absf(lateral):
+			lateral = ship.global_position.y - start.y # furthest towards the anchor's side
+		if i == 150:
 			await _shot(shot + "_dragged")
-	var lateral := ship.global_position.y - start.y
+		if stopped_after < 0.0 and ship.speed < 1.0 and i > 30:
+			stopped_after = i / 60.0
+			break
 	var facing := Vector2.from_angle(ship.rotation).dot((anchor - ship.global_position).normalized())
-	print("     %s: %.0f px/s → %.0f, lateral %d px, max brake %.0f, max turn %.2f rad/s" % [
-		"steer " + steer if steer != "" else "straight", v0, ship.speed, int(lateral), max_brake, max_turn])
+	print("     %s: %.0f px/s, braking distance %d px in %.1f s, lateral %d px, max brake %.0f px/s², max turn %.2f rad/s" % [
+		"steer " + steer if steer != "" else "straight", v0, int(path), stopped_after, int(lateral), max_brake, max_turn])
 	await _press_anchor() # weigh anchor again
-	return {"lateral": lateral, "max_brake": max_brake, "max_turn": max_turn, "end_speed": ship.speed, "facing": facing}
+	return {"lateral": lateral, "max_brake": max_brake, "max_turn": max_turn, "end_speed": ship.speed, "facing": facing,
+		"path": path, "stop_time": stopped_after}
 
 
 func _press_anchor() -> void:
