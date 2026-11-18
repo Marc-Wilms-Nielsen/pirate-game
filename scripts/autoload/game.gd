@@ -15,8 +15,9 @@ signal duel_requested(castle: Node2D) ## kaptajnen udfordrer et kongerige
 var save_path := "user://save.dat" ## tests switch to their own file (use_test_files)
 const SAVE_VERSION := 3 ## 2: opgraderinger har 100 trin. 3: 10x større verden
 
-const START_GOLD := 1000000 ## MIDLERTIDIGT til test – sæt tilbage til 150
-const TEST_GOLD := 1000000 ## MIDLERTIDIGT: gemte spil fyldes op til dette beløb (0 = slået fra)
+const START_GOLD := 0 ## a new voyage starts with empty pockets
+const TEST_START_GOLD := 1000000 ## tests (use_test_files) start rich, so they can buy everything they check
+var _test_mode := false
 const START_CANNONBALLS := 30
 const START_FOOD := 40
 
@@ -69,7 +70,7 @@ func _ready() -> void:
 
 
 func reset() -> void:
-	gold = START_GOLD
+	gold = TEST_START_GOLD if _test_mode else START_GOLD
 	cannonballs = START_CANNONBALLS
 	food = START_FOOD
 	crew = Catalog.START_CREW
@@ -824,8 +825,6 @@ func load_game() -> bool:
 		if not config.has("flag_style"):
 			config["flag_style"] = "small"
 	active_ship_index = clampi(active_ship_index, 0, owned_ships.size() - 1)
-	if TEST_GOLD > 0 and gold < TEST_GOLD:
-		gold = TEST_GOLD
 	# Venskab var pr. havn før – nu pr. fraktion
 	for key in harbor_rep.keys():
 		if not Catalog.FACTIONS.has(key):
@@ -857,6 +856,7 @@ func delete_save() -> void:
 ## Tests call this first: from then on they save, load and delete their own files and never
 ## touch the player's real save game or settings.
 func use_test_files() -> void:
+	_test_mode = true
 	save_path = "user://test_save.dat"
 	Settings.config_path = "user://test_settings.cfg"
 

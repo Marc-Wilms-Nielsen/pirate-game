@@ -1,13 +1,17 @@
 class_name ZoomCamera
 extends Camera2D
-## Kamera med spillerens egen zoom (musehjul eller + / -) oven i en automatisk "basis-zoom".
-## Zoom-niveauet deles mellem skib og kaptajn (gemt i Game.user_zoom).
+## Camera with the player's own zoom (mouse wheel or + / -) on top of an automatic "base zoom".
+## The zoom level is shared between the ship and the captain (saved in Game.user_zoom).
+## On foot (PlayerCharacter sets min_user_zoom) you can zoom out much less than at sea,
+## for a closer, more personal view; the ship's wider zoom is kept for when you go back aboard.
 
-const MIN_USER_ZOOM := 0.18 ## hvor langt man kan zoome ud
+const MIN_USER_ZOOM := 0.18 ## how far out you can zoom at sea
+const ON_FOOT_MIN_ZOOM := 0.65 ## how far out you can zoom on land (about 3.6x closer than at sea)
 const MAX_USER_ZOOM := 1.8
 const STEP := 1.15
 
-var base_zoom: float = 1.3 ## sættes af ejeren (f.eks. skibet ud fra fart)
+var base_zoom: float = 1.3 ## set by the owner (e.g. the ship, from its speed)
+var min_user_zoom: float = MIN_USER_ZOOM
 
 
 func _ready() -> void:
@@ -29,9 +33,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _change(factor: float) -> void:
-	Game.user_zoom = clampf(Game.user_zoom * factor, MIN_USER_ZOOM, MAX_USER_ZOOM)
+	# Start from what this camera actually shows, so zooming in on land responds at once
+	var current := clampf(Game.user_zoom, min_user_zoom, MAX_USER_ZOOM)
+	Game.user_zoom = clampf(current * factor, min_user_zoom, MAX_USER_ZOOM)
+
+
+## The user zoom this camera uses right now.
+func effective_user_zoom() -> float:
+	return clampf(Game.user_zoom, min_user_zoom, MAX_USER_ZOOM)
 
 
 func _process(delta: float) -> void:
-	var target := base_zoom * Game.user_zoom
+	var target := base_zoom * effective_user_zoom()
 	zoom = zoom.lerp(Vector2(target, target), 1.0 - exp(-4.0 * delta))

@@ -9,7 +9,7 @@ const SOUNDS := {
 	"swing": "res://assets/audio/sfx/sword_swing.wav",
 	"hurt": "res://assets/audio/sfx/hurt.wav",
 	"splash": "res://assets/audio/sfx/splash.wav",
-	"click": "res://assets/audio/sfx/ui_click.wav",
+	"click": "res://assets/audio/sfx/ui_click_soft.wav", ## deep, soft wooden tock (tools/generate_click.gd)
 	"gunshot": "res://assets/audio/sfx/gunshot.wav",
 	"explosion": "res://assets/audio/sfx/explosion.wav",
 	"fire": "res://assets/audio/sfx/fire_whoosh.wav",

@@ -17,6 +17,7 @@
 - The home island (build grid, fields, buildings, workers, storage, workshop) lives in the `Homestead` autoload; production is computed from real time (unix time), and workers eat food from storage.
 - The game is saved by `Game.save_game()` (user://save.dat). New systems can save via `Game.register_save_hooks`.
 - Settings live in the `Settings` autoload (saved to user://settings.cfg). Sounds must use the "SFX", "Ambience" or "Music" bus.
+- Look: `UiTheme` (scenes/ui/ui_theme.gd) holds the colours, fonts and text scale; use `UiTheme.label` / `UiTheme.button` so text gets the right font and size. Labels of size 12+ use the Pirata One heading font.
 - Movement happens in `_physics_process`; visuals are interpolated in `_process` (see ship.gd) to avoid stutter.
 - Game state (gold, cargo, ships, captains, harbor friendship) lives in the `Game` autoload (`scripts/autoload/game.gd`); sounds play via the `Sfx` autoload.
 - Log lines (loot, events) go through `Game.log_line()` / `Game.notify()` and show in the log bottom-left (L toggles it).

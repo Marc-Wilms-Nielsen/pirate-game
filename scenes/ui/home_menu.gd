@@ -225,6 +225,7 @@ func _build_build(box: VBoxContainer) -> void:
 	var grid := GridView.new()
 	grid.menu = self
 	grid.custom_minimum_size = Vector2(250, 220)
+	grid.clip_contents = true # the island art must not spill under the building list
 	row.add_child(grid)
 	var side := VBoxContainer.new()
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL

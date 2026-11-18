@@ -8,6 +8,8 @@ extends Node2D
 const SINK_TIME := 1.4
 const FADE_TIME := 0.35
 const RISE_TIME := 1.4
+const ARRIVAL_MIN := 250.0 ## px out from the pier where you surface (see arrival_spot)
+const ARRIVAL_MAX := 1400.0
 const PIRATE_RANGE := 700.0 ## no fast travel with an attacking pirate this close
 
 var busy := false
@@ -75,7 +77,10 @@ func travel(harbor: Harbor) -> bool:
 		_spawn_bubbles(fleet, 1))
 	# 2. Fade to deep blue and move everyone
 	await _animate(FADE_TIME, func(t: float) -> void: _fade.color.a = t)
-	s.place_at(harbor.dock_position(), harbor.dock_rotation())
+	# You arrive out at sea, under full sail, heading for the pier: lower the sails and
+	# dock yourself (the harbor's local +x points out to sea).
+	var arrival := arrival_spot(harbor)
+	s.place_at(arrival, (harbor.dock_position() - arrival).angle())
 	for escort in get_tree().get_nodes_in_group("escorts"):
 		escort.call("_teleport_to_formation", s)
 	var tow := get_tree().get_first_node_in_group("tow_train")
@@ -91,7 +96,11 @@ func travel(harbor: Harbor) -> bool:
 			(wake as Wake).clear() # no foam trail across the whole world
 	await get_tree().process_frame
 	await _animate(FADE_TIME, func(t: float) -> void: _fade.color.a = 1.0 - t)
-	# 3. Rise up through the water
+	# 3. Rise up through the water, already sailing at full speed – the wheel is yours
+	s.set_controlled(true)
+	s.sail_level = PlayerShip.SAIL_FACTORS.size() - 1
+	s.sail_level_changed.emit(s.sail_level)
+	s.speed = float(s.stats["speed"]) * Game.tow_speed_factor()
 	Sfx.play_at("splash", s.global_position)
 	await _animate(RISE_TIME, func(t: float) -> void:
 		for v in fleet:
@@ -102,11 +111,27 @@ func travel(harbor: Harbor) -> bool:
 		if is_instance_valid(v):
 			(v as ShipVisual).set_sinking(0.0)
 	busy = false
-	s.set_controlled(true)
-	Game.notify("You surface at %s (%d gold). Press F to dock." % [harbor.harbor_name, price], UiTheme.ACCENT)
+	Game.notify("You surface off %s under full sail (%d gold). Lower the sails and dock!" % [harbor.harbor_name, price], UiTheme.ACCENT)
 	Game.changed.emit()
 	Game.save_game()
 	return true
+
+
+## Where you surface: open water straight out from the pier. The distance is worked out from
+## this ship's speed and how it glides: take in the sails the moment you are up, and you coast
+## to a stop right at the pier. React late and you need the anchor, or must steer away.
+func arrival_spot(harbor: Harbor) -> Vector2:
+	var s := _player_ship()
+	var dock := harbor.dock_position()
+	var out := Vector2.from_angle(harbor.global_rotation)
+	var v := float(s.stats["speed"]) * Game.tow_speed_factor() if s else 100.0
+	var glide := v * v / (2.0 * (s.deceleration if s else 9.0))
+	var dist := clampf(v * RISE_TIME + glide, ARRIVAL_MIN, ARRIVAL_MAX)
+	for k in [1.0, 0.8, 0.6, 0.4]:
+		var p: Vector2 = dock + out * dist * float(k)
+		if not Game.is_land(p) and not Game.is_land(dock + out * dist * float(k) * 0.5):
+			return p
+	return dock + out * ARRIVAL_MIN
 
 
 func _player_ship() -> PlayerShip:
