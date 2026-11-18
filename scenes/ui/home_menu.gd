@@ -184,7 +184,9 @@ func _build_overview(box: VBoxContainer) -> void:
 func _build_fields(box: VBoxContainer) -> void:
 	for i in Homestead.plots.size():
 		var plot: Dictionary = Homestead.plots[i]
-		var row := HBoxContainer.new()
+		# An empty field shows a seed button per crop: a flow container wraps them onto a second
+		# line instead of making the row (and the whole panel) wider than the screen.
+		var row: Container = HFlowContainer.new() if plot["crop"] == "" else HBoxContainer.new()
 		box.add_child(row)
 		var l := UiTheme.label("Field %d" % (i + 1))
 		l.custom_minimum_size = Vector2(50, 0)

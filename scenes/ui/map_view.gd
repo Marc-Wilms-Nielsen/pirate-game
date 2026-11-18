@@ -160,6 +160,8 @@ func _draw() -> void:
 		if _zoom >= 2.0 or harbor.kind == "home":
 			_text(p + Vector2(0, -7), ("Your home" if Homestead.claimed else "Deserted island (for sale)") if harbor.kind == "home" else harbor.harbor_name, 8, Color.WHITE)
 
+	_draw_quest_marks(view)
+
 	for node in get_tree().get_nodes_in_group("castles"):
 		var castle := node as Castle
 		var kp := _to_map(castle.global_position)
@@ -223,7 +225,7 @@ func _draw_legend(pos: Vector2) -> void:
 		[Color(0.75, 0.5, 0.3), "Flotsam"],
 		[Color(0.95, 0.95, 0.95), "Merchant ship"],
 		[Color(0.95, 0.25, 0.2), "Pirate ship"],
-		[Color(0.45, 0.85, 0.85), "Shallow water"],
+		[Color(1.0, 0.85, 0.15), "Quest  ! new  ? hand in"],
 		[Color(0.85, 0.2, 0.22), "Castle (kingdom)"],
 	]
 	draw_string(_font, pos + Vector2(0, 8), "Legend", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.ACCENT)
@@ -255,6 +257,33 @@ func _arrow(p: Vector2, rot: float, length: float, col: Color) -> void:
 	var side := f.orthogonal()
 	var pts := PackedVector2Array([p + f * length, p - f * length * 0.6 + side * length * 0.6, p - f * length * 0.6 - side * length * 0.6])
 	draw_colored_polygon(pts, col)
+
+
+## Main quest: yellow "!" where a quest waits, "?" where one can be handed in, and a pulsing
+## ring on the current target (a boss, a delivery harbor or the treasure).
+func _draw_quest_marks(view: Rect2) -> void:
+	var mark_col := Color(1.0, 0.85, 0.15)
+	for node in get_tree().get_nodes_in_group("harbors"):
+		var harbor := node as Harbor
+		var mark := Quests.marker_at(harbor.harbor_name)
+		if mark == "":
+			continue
+		var p := _to_map(harbor.global_position)
+		# Off the edge of the view: pin it to the border so you can still see which way to sail
+		var inner := _map_rect().grow(-10.0)
+		var pinned := Vector2(clampf(p.x, inner.position.x, inner.end.x), clampf(p.y, inner.position.y, inner.end.y))
+		var w := _font.get_string_size(mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		var at := pinned + Vector2(-w * 0.5, -17) # above the harbor's name
+		draw_string_outline(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0.15, 0.1, 0.0, 0.9))
+		draw_string(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, mark_col)
+	var target := Quests.target_position()
+	if target != Vector2.INF:
+		var tp := _to_map(target)
+		if view.has_point(tp):
+			var pulse := 6.0 + sin(Time.get_ticks_msec() / 200.0) * 2.0
+			draw_arc(tp, pulse, 0.0, TAU, 24, mark_col, 1.5, true)
+			draw_line(tp + Vector2(-3, -3), tp + Vector2(3, 3), mark_col, 1.5, true)
+			draw_line(tp + Vector2(3, -3), tp + Vector2(-3, 3), mark_col, 1.5, true)
 
 
 func _text(center: Vector2, text: String, font_size: int, col: Color) -> void:

@@ -25,6 +25,7 @@ Settings="*res://scripts/autoload/settings.gd"
 Game="*res://scripts/autoload/game.gd"
 Sfx="*res://scripts/autoload/sfx.gd"
 Homestead="*res://scripts/autoload/homestead.gd"
+Quests="*res://scripts/autoload/quests.gd"
 
 [display]
 

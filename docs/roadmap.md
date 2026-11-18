@@ -188,7 +188,16 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Long menu texts wrap; the harbor's Captains tab no longer pushes its buttons off-screen. New test: tests/ui_fit.tscn
 - [ ] Playtest on a laptop with built-in graphics: FPS at the start harbor, at sea by day and at night
 
+## Round 13 – Main quest line: "The Sun King's Crown"
+- [x] 10 quests, one at a time, no timers: 3 gather, 3 delivery, 4 bosses (2 named pirate ships, a bandit chief with guards, a giant jaguar), ending with digging up the Crown of the Sun King
+- [x] 6 quest givers at harbors with code-drawn portraits; a chat window with Accept / Decline pops up when you dock
+- [x] Yellow ! (new quest) and ? (hand in) over harbors and on the map, a ring on the current target, the current goal under the stats
+- [x] Places are picked from the generated world once and saved; progress is saved
+- [x] Home island Fields tab: seed buttons wrap instead of pushing the panel off-screen
+- [x] tests/quest_check.tscn plays the whole line (142 checks)
+- [ ] Playtest: does the difficulty of the bosses feel right? Are the distances between harbors fun or too long?
+
 ### Ideas for next round
-- [ ] Missioner/opgaver fra havnene (leveringer, dusører)
+- [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne
 - [ ] Rigtige lyde, musik og grafik

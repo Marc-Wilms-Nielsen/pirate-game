@@ -9,9 +9,14 @@ var _prompt: Label
 var _log: LogPanel
 var _bars: Bars
 var _fps: Label
+var _quest: Label ## the main quest's current goal, under the stats in the top right
 
 
 func _ready() -> void:
+	_quest = _label(Vector2(250, 22), 8)
+	_quest.size = Vector2(382, 12)
+	_quest.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_quest.add_theme_color_override("font_color", Color(1.0, 0.85, 0.15))
 	process_mode = Node.PROCESS_MODE_ALWAYS # opdateres også når menuer er åbne
 	# (Tastevejledningen er fjernet fra skærmen – den findes under Esc → Styring)
 	_stats = _label(Vector2(0, 6), 10)
@@ -58,6 +63,9 @@ func _process(_delta: float) -> void:
 	_fps.visible = Settings.show_fps
 	if Settings.show_fps:
 		_fps.text = "FPS %d" % Engine.get_frames_per_second()
+	var q := Quests.current()
+	var goal := Quests.objective_text()
+	_quest.text = "" if goal == "" else ("%s – %s" % [q["title"], goal] if not q.is_empty() else goal)
 	var ship := get_tree().get_first_node_in_group("player_ship") as PlayerShip
 	var player := get_tree().get_first_node_in_group("player_character") as PlayerCharacter
 	_bars.ship = ship

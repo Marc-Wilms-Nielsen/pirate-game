@@ -29,6 +29,7 @@
 - `tests/perf_check.tscn` measures frame time per setting; `tests/perf_parts.tscn` measures CPU per subsystem.
 - The ocean shader reads pre-baked noise textures (`scenes/world/water_noise.gd`) – don't add per-pixel noise functions to full-screen shaders. The seabed's rocks/wrecks and the "Water resolution" setting go through `WaterLayers` (`scenes/world/water_layers.gd`).
 - After touching the water, fog or seabed, run `tests/water_bench.tscn` at 1920x1080: it fails if the water got more than 10 % slower than `tests/perf_budget.cfg`. Use `-- --update-budget` only for intended changes.
+- Main quest line ("The Sun King's Crown"): quests and quest givers are data in `Catalog.QUESTS` / `Catalog.QUEST_PEOPLE`; progress and saving live in the `Quests` autoload; `QuestWorld` (`scenes/quests/quest_world.gd`) draws the ! / ? marks and spawns bosses near their spot; `QuestDialog` + `Portrait` (`scenes/ui/`) are the chat window. `tests/quest_check.tscn` plays the whole line.
 - Menus are laid out in the 640 x 360 base resolution. `tests/ui_fit.tscn` opens every menu tab and fails if a panel sticks out (usually a long line of text or a wide row). `UiTheme.label` wraps text longer than 60 characters for this reason.
 - Tests that call `Game.delete_save()` delete the real save in the user data folder: back it up first when running them on the developer's machine.
 - Run `tests/smoke_test.tscn` after bigger changes – it exercises every system and saves screenshots to user://test_shots/.

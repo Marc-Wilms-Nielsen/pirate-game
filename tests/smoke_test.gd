@@ -10,9 +10,15 @@ var failures: Array[String] = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	DirAccess.make_dir_recursive_absolute(shots_dir)
+	Game.use_test_files() # never touch the real save or settings
+	# Many checks wait a number of frames: run at a fixed 60 FPS whatever the player has set
+	Settings.max_fps = 60
+	Engine.max_fps = 60
 	Game.delete_save()
 	Game.reset()
 	Homestead.reset()
+	Quests.reset()
+	Quests.index = Catalog.QUESTS.size() # quest line done: docking opens the harbor menu directly (quests: tests/quest_check.tscn)
 	main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child.call_deferred(main)
 	await _frames(30)

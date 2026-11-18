@@ -81,6 +81,10 @@ func _die() -> void:
 	_dead = true
 	if loot_table != "":
 		Game.give_loot(loot_table, global_position)
+	# Quest bosses (set by QuestWorld) drop extra loot and complete their quest's goal
+	if has_meta("quest_boss"):
+		Game.give_loot("quest_boss", global_position + Vector2(0, -20))
+		Quests.boss_defeated(get_meta("quest_boss"))
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.4)
 	tween.tween_callback(queue_free)

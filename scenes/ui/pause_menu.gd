@@ -80,6 +80,7 @@ func _build() -> void:
 		Game.delete_save()
 		Game.reset()
 		Homestead.reset()
+		Quests.reset()
 		get_tree().paused = false
 		get_tree().reload_current_scene())
 	header.add_child(new_game)

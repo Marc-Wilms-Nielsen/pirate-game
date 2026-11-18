@@ -534,3 +534,127 @@ const ISLAND_NAMES := [
 ]
 const VILLAGE_NAMES := ["Fisher's Nook", "Netmend", "Shellby", "Little Harbor", "Saltwick", "Oyster Row", "Gullcroft", "Reedmoor", "Cockle Cove", "Tidewick",
 	"Mussel Point", "Sandy Hollow", "Driftby", "Herring Hut", "Kelpwick", "Crabbe", "Wavecrest", "Seabright", "Pebblebay", "Old Pier"]
+
+# --- Main quest line: "The Sun King's Crown" -----------------------------------
+# A treasure hunt across the world, one quest at a time. The Quests autoload
+# (scripts/autoload/quests.gd) tracks progress; harbors, camps and boss spots are picked
+# from the generated world the first time the quest line starts (see Quests.resolve_spots).
+
+## The people who hand out quests. "look" is drawn by Portrait (scenes/ui/portrait.gd).
+const QUEST_PEOPLE := {
+	"maren": {"name": "Old Maren", "title": "Cartographer", "look": {"skin": Color(0.96, 0.8, 0.68), "hair": Color(0.82, 0.82, 0.85),
+		"hair_style": "bun", "hat": "none", "beard": "none", "glasses": true, "coat": Color(0.35, 0.45, 0.55)}},
+	"tobias": {"name": "Tobias Quill", "title": "Harbor master", "look": {"skin": Color(0.9, 0.72, 0.58), "hair": Color(0.45, 0.3, 0.18),
+		"hair_style": "short", "hat": "cap", "hat_color": Color(0.2, 0.3, 0.5), "beard": "mustache", "coat": Color(0.25, 0.32, 0.55)}},
+	"vex": {"name": "\"Silent\" Vex", "title": "Smugglers' Brotherhood", "look": {"skin": Color(0.78, 0.6, 0.45), "hair": Color(0.12, 0.1, 0.1),
+		"hair_style": "long", "hat": "hood", "hat_color": Color(0.32, 0.2, 0.4), "beard": "none", "eyepatch": true, "earring": true, "coat": Color(0.25, 0.16, 0.3)}},
+	"ruben": {"name": "Old Salt Ruben", "title": "Smuggler captain", "look": {"skin": Color(0.88, 0.66, 0.52), "hair": Color(0.7, 0.7, 0.7),
+		"hair_style": "bald", "hat": "bandana", "hat_color": Color(0.75, 0.2, 0.18), "beard": "full", "beard_color": Color(0.75, 0.75, 0.75), "earring": true, "coat": Color(0.4, 0.3, 0.2)}},
+	"ilsa": {"name": "Ilsa Brandt", "title": "Scholar of old runes", "look": {"skin": Color(0.5, 0.34, 0.24), "hair": Color(0.1, 0.08, 0.07),
+		"hair_style": "long", "hat": "none", "beard": "none", "glasses": true, "coat": Color(0.2, 0.35, 0.6)}},
+	"celestine": {"name": "Lady Celestine", "title": "Envoy of Aurelia", "look": {"skin": Color(0.98, 0.85, 0.75), "hair": Color(0.95, 0.8, 0.45),
+		"hair_style": "long", "hat": "feather", "hat_color": Color(0.75, 0.15, 0.2), "beard": "none", "earring": true, "coat": Color(0.7, 0.15, 0.2)}},
+}
+
+## The quest line, in order. Fields:
+##   type: "gather" (bring items), "delivery" (carry something to another harbor) or "boss"
+##   giver / turn_in: person id; turn_in defaults to the giver
+##   at / turn_in_at / target: where, resolved once from the world:
+##     "start" = Sunhaven, "<quest id>.giver" / ".turn_in" = same harbor as an earlier quest,
+##     {"faction": f, "near": ref, "dist": d} = that faction's harbor closest to d px from ref,
+##     {"sea": ref, "dist": d} = open water, {"camp": ref, "dist": d} = a pirate camp,
+##     {"wild_mainland": ref} = a mainland without a kingdom, {"islet": ref, "dist": d} = a small island
+##   boss: {"kind": "ship"/"beast"/"bandit", "name", ...}; treasure: dig up a chest after the boss
+##   %s in offer lines is replaced by the turn-in harbor's name.
+const QUESTS := [
+	{"id": "ink", "title": "Ink and Parchment", "type": "gather", "giver": "maren", "at": "start",
+		"items": {"wood": 8, "herbs": 3},
+		"offer": ["Ah, a new captain! That old scrap of map you carry... may I see it?",
+			"By the tides – this is the Sun King's hand! I must copy it before it falls apart.",
+			"Bring me 8 Wood for a drawing board and 3 Herbs for ink. Trees and herb bushes grow on the islands."],
+		"done": ["Splendid. Now look closely: the map is torn, and three pieces are missing.",
+			"The Sun King's Crown is real, captain. And you hold the first clue."],
+		"reward": {"gold": 300, "rep": 150}},
+	{"id": "letter", "title": "The Sealed Letter", "type": "delivery", "giver": "maren", "at": "start",
+		"turn_in": "tobias", "turn_in_at": {"faction": "free", "near": "start", "dist": 2600.0},
+		"offer": ["An old friend of mine, Tobias Quill, keeps the harbor at %s.",
+			"He hears every rumour on the sea. Take him this letter about your map.",
+			"It's light – it won't take any room in your hold."],
+		"done": ["A letter from Maren? Let me read... The Sun King's map! Keep your voice down, captain.",
+			"I know who has the first missing piece. You won't like the answer."],
+		"reward": {"gold": 400, "rep": 250}},
+	{"id": "gull", "title": "The Black Gull", "type": "boss", "giver": "tobias", "at": "letter.turn_in",
+		"target": {"sea": "letter.turn_in", "dist": 1100.0},
+		"boss": {"kind": "ship", "name": "the Black Gull", "ship": "cutter", "hp": 3.0},
+		"offer": ["A pirate ship, the Black Gull, robbed a scholar last month and took a piece of old map.",
+			"She lurks in the waters nearby – I've marked the spot on your map.",
+			"Sink her, and the map piece floats up with the wreck."],
+		"done": ["You sank the Black Gull? The whole harbor heard the cannons!",
+			"And there's the map piece – a little wet, but readable. One of three."],
+		"reward": {"gold": 1200, "rep": 500}},
+	{"id": "nerve", "title": "Proof of Nerve", "type": "gather", "giver": "vex", "at": {"faction": "smugglers", "near": "gull.giver", "dist": 2600.0},
+		"items": {"shark_tooth": 3, "jaguar_pelt": 2},
+		"offer": ["...",
+			"Tobias sent you. The Brotherhood knows where the second piece is.",
+			"But we don't talk to soft hands. Bring me 3 Shark teeth and 2 Jaguar pelts."],
+		"done": ["Hm. You have teeth yourself, captain.", "Fine. The Brotherhood will talk – after one more favour."],
+		"reward": {"gold": 800, "rep": 600}},
+	{"id": "tarp", "title": "Under the Tarp", "type": "delivery", "giver": "vex", "at": "nerve.giver",
+		"turn_in": "ruben", "turn_in_at": {"faction": "smugglers", "near": "nerve.giver", "dist": 2600.0},
+		"offer": ["Four crates. Don't ask what's inside, and don't open them.",
+			"Bring them to Old Salt Ruben in %s. He knows about your map.",
+			"They ride under a tarp on deck – no room needed in your hold."],
+		"done": ["Vex's crates, all four, and not one opened. An honest smuggler!",
+			"Now, about your map piece. I know exactly where it is – and I hate the man who has it."],
+		"reward": {"gold": 1000, "rep": 700}},
+	{"id": "redbeard", "title": "Redbeard's Camp", "type": "boss", "giver": "ruben", "at": "tarp.turn_in",
+		"target": {"camp": "tarp.turn_in", "dist": 1400.0},
+		"boss": {"kind": "bandit", "name": "Chief Redbeard", "hp": 260.0, "guards": 3},
+		"offer": ["Redbeard runs a camp of cutthroats on an island close by. I've marked it on your map.",
+			"He wears the second map piece around his neck like a medal. The fool.",
+			"Go ashore with your pistol loaded. He doesn't fight alone."],
+		"done": ["Redbeard is gone? Ha! I'll drink to that tonight.", "Here – the piece is yours. Two of three, captain."],
+		"reward": {"gold": 2000, "rep": 900}},
+	{"id": "runes", "title": "Runes in Stone", "type": "gather", "giver": "ilsa", "at": {"faction": "valdora", "near": "redbeard.giver", "dist": 0.0},
+		"items": {"golem_core": 2},
+		"offer": ["You have two pieces of the Sun King's map? May I... oh. Oh my.",
+			"These runes are old Solari script. I can read them, but only by the light of a golem core.",
+			"Golems roam the big wild mainlands. Bring me 2 Golem cores."],
+		"done": ["The cores glow... and the runes appear! \"Where the jungle king sleeps, the third path begins.\"",
+			"The jungle king – it must be a beast. A very, very large one."],
+		"reward": {"gold": 1500, "rep": 900}},
+	{"id": "jungle", "title": "The Jungle King", "type": "boss", "giver": "ilsa", "at": "runes.giver",
+		"target": {"wild_mainland": "runes.giver"},
+		"boss": {"kind": "beast", "beast": "jaguar", "name": "the Jungle King", "hp": 8.0, "size": 1.9, "damage": 1.6},
+		"offer": ["The hunters speak of a jaguar twice the size of a man, ruling a wild mainland.",
+			"I've marked its hunting ground on your map. The last map piece lies in its den.",
+			"Please be careful. Bring food, and a strong blade."],
+		"done": ["You faced the Jungle King and lived? And the last piece!",
+			"With all three... the map points to a small island in the waters of Aurelia."],
+		"reward": {"gold": 3000, "rep": 1200}},
+	{"id": "petition", "title": "Royal Permission", "type": "delivery", "giver": "ilsa", "at": "jungle.giver",
+		"turn_in": "celestine", "turn_in_at": {"faction": "aurelia", "near": "jungle.giver", "dist": 0.0},
+		"offer": ["The waters around that island belong to the Kingdom of Aurelia. Nobody sails there without permission.",
+			"I've written a petition, sealed by the university. Take it to Lady Celestine in %s.",
+			"She is strict, but fair."],
+		"done": ["A petition... for the Sun King's island? You are either brave or mad, captain.",
+			"Very well. Aurelia grants you passage. But you are not the only one who wants that crown."],
+		"reward": {"gold": 1500, "rep": 1500}},
+	{"id": "crown", "title": "The Drowned Crown", "type": "boss", "giver": "celestine", "at": "petition.turn_in",
+		"turn_in": "maren", "turn_in_at": "start",
+		"target": {"islet": "petition.turn_in", "dist": 2200.0},
+		"boss": {"kind": "ship", "name": "the Barracuda", "ship": "brig", "hp": 4.0}, "treasure": true,
+		"offer": ["Captain Barracuda – the worst pirate on these seas – guards the Sun King's island.",
+			"Sink his ship, then go ashore and dig where the map shows. The spot is marked.",
+			"Then bring the crown home to Old Maren, who started you on this path."],
+		"done": ["Is that... the Crown of the Sun King. In my little shop.",
+			"You did it, captain. Every sailor from here to Aurelia will know your name.",
+			"Keep the crown – but promise me you'll let me draw it first."],
+		"reward": {"gold": 10000, "rep": 2500}},
+]
+
+## Loot from quest bosses and the final treasure (merged into LOOT by Game.give_loot).
+const QUEST_LOOT := {
+	"quest_boss": {"gold": [400, 900], "items": [["jewels", 2, 4, 1.0], ["stolen_jewels", 1, 3, 0.8], ["pearls", 2, 4, 0.8], ["ancient_coin", 1, 1, 0.5]]},
+	"sun_treasure": {"gold": [3000, 5000], "items": [["sun_crown", 1, 1, 1.0], ["gold_bar", 3, 6, 1.0], ["jewels", 4, 8, 1.0], ["ancient_coin", 1, 3, 1.0]]},
+}

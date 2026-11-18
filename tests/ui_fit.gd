@@ -13,6 +13,7 @@ var _failures := 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Game.use_test_files() # never touch the real save or settings
 	Game.delete_save()
 	Game.reset()
 	main = load("res://scenes/main/main.tscn").instantiate()
@@ -37,6 +38,8 @@ func _ready() -> void:
 	for i in 8:
 		Homestead.hire_worker()
 	Homestead.add_to_storage("food", 40)
+	if not Homestead.plots.is_empty():
+		Homestead.plots[0]["crop"] = "" # an empty field shows the widest row (a seed button per crop)
 	for id in ["wood", "stone", "fish", "iron_ore", "wheat", "eggs"]:
 		Homestead.add_to_storage(id, 25)
 	home_menu.call("open")

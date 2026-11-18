@@ -36,6 +36,13 @@ func open() -> void:
 	_respawn = RESPAWN_TIME
 	Sfx.play_at("chest", global_position)
 	Game.give_loot(loot_table, global_position + Vector2(0, -10))
+	if has_meta("quest_treasure"): # the Sun King's treasure: opens once, never refills
+		_respawn = INF
+		# The crown must never be lost to a full cargo hold: it squeezes in regardless
+		if Game.cargo_count("sun_crown") == 0:
+			Game.cargo["sun_crown"] = 1
+			Game.changed.emit()
+		Quests.treasure_opened()
 
 
 func _draw() -> void:
