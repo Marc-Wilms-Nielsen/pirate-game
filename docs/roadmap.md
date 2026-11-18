@@ -197,6 +197,13 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] tests/quest_check.tscn plays the whole line (142 checks)
 - [ ] Playtest: does the difficulty of the bosses feel right? Are the distances between harbors fun or too long?
 
+## Round 14 – Discreet wake and fast travel
+- [x] New discreet wake: a short, thin foam strip behind the stern and faint ripples at the bow (no wide V)
+- [x] Fast travel from the map to harbors you have docked at, for gold by distance (20 + 0.008 per px)
+- [x] Transition: your ship, your captains' ships and the ships in tow sink in bubbles and rise next to the destination's pier
+- [x] Blocked while pirates attack, while the captain is ashore, or without enough gold (the reason shows on the map)
+- [x] tests/travel_check.tscn
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne

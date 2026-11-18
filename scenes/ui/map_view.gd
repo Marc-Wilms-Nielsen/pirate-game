@@ -11,6 +11,76 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	clip_contents = true
 	custom_minimum_size = Vector2(360, 240)
+	# Fast travel bar: shown at the bottom of the map when a harbor is picked
+	_bar = PanelContainer.new()
+	_bar.visible = false
+	add_child(_bar)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_bar.add_child(row)
+	_bar_label = UiTheme.label("", 9)
+	_bar_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(_bar_label)
+	_bar_button = UiTheme.button("Fast travel", _on_fast_travel)
+	row.add_child(_bar_button)
+
+
+# --- Fast travel ---------------------------------------------------------------
+
+var _press_pos := Vector2.ZERO
+var _selected: Harbor = null
+var _bar: PanelContainer
+var _bar_label: Label
+var _bar_button: Button
+
+
+## Picks the harbor nearest to a click on the map (or clears the pick).
+func select_harbor_at(map_pos: Vector2) -> void:
+	_selected = null
+	var best := 12.0
+	for node in get_tree().get_nodes_in_group("harbors"):
+		var d := _to_map((node as Harbor).global_position).distance_to(map_pos)
+		if d < best:
+			best = d
+			_selected = node as Harbor
+	_update_bar()
+
+
+func selected_harbor() -> Harbor:
+	return _selected
+
+
+func _update_bar() -> void:
+	var travel := get_tree().get_first_node_in_group("fast_travel") as FastTravel
+	_bar.visible = _selected != null and travel != null
+	if not _bar.visible:
+		return
+	var ship := get_tree().get_first_node_in_group("player_ship") as Node2D
+	var name_text := "Your home" if _selected.kind == "home" else _selected.harbor_name
+	var reason := travel.blocked_reason(_selected)
+	var price := FastTravel.cost(ship.global_position, _selected.global_position) if ship else 0
+	_bar_label.text = "%s  ·  %d gold%s" % [name_text, price, "" if reason == "" else "  ·  " + reason]
+	_bar_label.add_theme_color_override("font_color", UiTheme.TEXT if reason == "" else UiTheme.MUTED)
+	_bar_button.disabled = reason != ""
+	var w := minf(_map_rect().size.x - 12.0, 420.0)
+	_bar.size = Vector2(w, 0)
+	_bar.position = Vector2(6, size.y - _bar.get_combined_minimum_size().y - 6)
+
+
+func _on_fast_travel() -> void:
+	var travel := get_tree().get_first_node_in_group("fast_travel") as FastTravel
+	var harbor := _selected
+	if travel == null or harbor == null or travel.blocked_reason(harbor) != "":
+		return
+	_selected = null
+	_bar.visible = false
+	# Close the menu this map sits in (the pause menu), then go
+	var n := get_parent()
+	while n and not n.has_method("close"):
+		n = n.get_parent()
+	if n:
+		n.call("close")
+	travel.travel(harbor)
 
 
 func _process(_delta: float) -> void:
@@ -22,6 +92,8 @@ func _process(_delta: float) -> void:
 			if ship:
 				_pan = ship.global_position
 				_zoom = 5.0
+		if _selected:
+			_update_bar() # gold, pirates and distance change while the map is open
 		queue_redraw()
 
 
@@ -63,6 +135,7 @@ func _gui_input(event: InputEvent) -> void:
 					_pan = Vector2.ZERO
 				else:
 					_dragging = true
+					_press_pos = mb.position
 			MOUSE_BUTTON_RIGHT:
 				var ship := get_tree().get_first_node_in_group("player_ship") as Node2D
 				if ship:
@@ -72,6 +145,8 @@ func _gui_input(event: InputEvent) -> void:
 		queue_redraw()
 	elif mb and not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = false
+		if mb.position.distance_to(_press_pos) < 4.0: # a click, not a drag: pick a harbor
+			select_harbor_at(mb.position)
 	var motion := event as InputEventMouseMotion
 	if motion and _dragging:
 		_pan -= motion.relative / _scale()
@@ -204,9 +279,9 @@ func _draw() -> void:
 	# Signaturforklaringen får sin egen baggrund, så et zoomet kort ikke tegner hen over den
 	draw_rect(Rect2(map_size, 0, size.x - map_size, size.y), Color(0.12, 0.16, 0.2))
 	_draw_legend(Vector2(map_size + 10.0, 10.0))
-	draw_string(_font, Vector2(map_size + 10.0, size.y - 34.0), "Scroll: zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.MUTED)
-	draw_string(_font, Vector2(map_size + 10.0, size.y - 22.0), "Drag: move the map", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.MUTED)
-	draw_string(_font, Vector2(map_size + 10.0, size.y - 10.0), "Right-click: your ship", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.MUTED)
+	draw_string(_font, Vector2(map_size + 10.0, size.y - 34.0), "Scroll: zoom  Drag: move", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.MUTED)
+	draw_string(_font, Vector2(map_size + 10.0, size.y - 22.0), "Right-click: your ship", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.MUTED)
+	draw_string(_font, Vector2(map_size + 10.0, size.y - 10.0), "Click a harbor: fast travel", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.ACCENT)
 
 
 func _draw_legend(pos: Vector2) -> void:
@@ -276,6 +351,10 @@ func _draw_quest_marks(view: Rect2) -> void:
 		var at := pinned + Vector2(-w * 0.5, -17) # above the harbor's name
 		draw_string_outline(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0.15, 0.1, 0.0, 0.9))
 		draw_string(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, mark_col)
+	if _selected: # the harbor picked for fast travel
+		var sp := _to_map(_selected.global_position)
+		draw_arc(sp, 8.0, 0.0, TAU, 24, Color.WHITE, 1.5, true)
+		draw_arc(sp, 10.5, 0.0, TAU, 24, Color(0, 0, 0, 0.5), 1.0, true)
 	var target := Quests.target_position()
 	if target != Vector2.INF:
 		var tp := _to_map(target)

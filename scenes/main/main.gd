@@ -101,7 +101,12 @@ func _ready() -> void:
 			_sync_escorts.call_deferred())
 	_duel_menu.connect("closed", _on_duel_closed)
 	var tow := TowTrain.new()
+	tow.add_to_group("tow_train")
 	add_child(tow)
+	# Fast travel to visited harbors (picked on the map)
+	var travel := FastTravel.new()
+	travel.name = "FastTravel"
+	add_child(travel)
 	move_child(tow, _ship.get_index()) # tegnes under spillerens skib
 	var autosave := Timer.new()
 	autosave.wait_time = 60.0
@@ -578,6 +583,7 @@ func _on_dock_requested(harbor: Harbor) -> void:
 	_ship.place_at(harbor.dock_position(), harbor.dock_rotation())
 	_ship.set_controlled(false)
 	_pause.set("harbor_menu_open", true)
+	Game.visited_harbors[harbor.harbor_name] = true # fast travel can bring you back here
 	if harbor.kind == "home":
 		_home_menu.call("open")
 		return

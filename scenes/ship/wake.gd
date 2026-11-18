@@ -1,19 +1,23 @@
 class_name Wake
 extends Node2D
-## Kølvand som et V i vandet: to bølgearme spreder sig skråt ud fra stævnen (som et rigtigt
-## Kelvin-kølvand), og en blød stribe hvidt skumvand ligger bag agterstavnen.
-## Tegnes i verdenskoordinater (top_level), så sporet bliver liggende, hvor skibet har været.
+## A discreet wake: a short, thin strip of foam right behind the stern that fades in about
+## 1.5 s, and faint little ripples at the bow that only last a moment. It gets a little
+## clearer at higher speed, but never strong (the old wide V-shaped wake was too loud).
+## Drawn in world coordinates (top_level), so the trail stays where the ship has been.
 
-const LIFE := 3.2 ## sekunder et punkt lever
-const STEP := 0.07 ## sekunder mellem punkterne
-const SPREAD := 0.36 ## hvor hurtigt armene breder sig i forhold til farten (≈ 20° vinkel)
+const LIFE := 1.5 ## seconds a foam point lives
+const STEP := 0.07 ## seconds between points
+const RIPPLE_LIFE := 0.6 ## seconds a bow ripple lives
+const RIPPLE_STEP := 0.35 ## seconds between bow ripples
 
 var length := 58.0
 var beam := 20.0
 var min_speed := 6.0
 
 var _points: Array[Dictionary] = []
+var _ripples: Array[Dictionary] = []
 var _timer := 0.0
+var _ripple_timer := 0.0
 var _time := 0.0
 
 
@@ -24,68 +28,69 @@ func _ready() -> void:
 	global_rotation = 0.0
 
 
-## Kaldes hvert frame af ShipVisual. forward = skibets retning, speed i px/s.
+## Called every frame by ShipVisual. forward = the ship's heading, speed in px/s.
 func track(ship_pos: Vector2, forward: Vector2, speed: float, delta: float, active: bool) -> void:
 	_time += delta
 	for p in _points:
 		p["age"] = float(p["age"]) + delta
 	while not _points.is_empty() and float(_points[0]["age"]) > LIFE:
 		_points.pop_front()
+	for r in _ripples:
+		r["age"] = float(r["age"]) + delta
+	while not _ripples.is_empty() and float(_ripples[0]["age"]) > RIPPLE_LIFE:
+		_ripples.pop_front()
 	_timer -= delta
-	if active and speed > min_speed and _timer <= 0.0:
+	_ripple_timer -= delta
+	var moving := active and speed > min_speed
+	if moving and _timer <= 0.0:
 		_timer = STEP
 		var side := Vector2(-forward.y, forward.x)
-		_points.append({
-			"bow": ship_pos + forward * length * 0.42,
-			"stern": ship_pos - forward * length * 0.48,
-			"side": side,
-			"speed": speed,
-			"age": 0.0,
-			"seed": randf() * TAU,
-		})
-	if _points.is_empty():
-		if visible:
-			queue_redraw()
-		return
-	queue_redraw()
+		_points.append({"stern": ship_pos - forward * length * 0.46, "side": side, "speed": speed, "age": 0.0, "seed": randf() * TAU})
+	if moving and _ripple_timer <= 0.0:
+		_ripple_timer = RIPPLE_STEP
+		_ripples.append({"pos": ship_pos + forward * length * 0.44, "dir": forward, "speed": speed, "age": 0.0})
+	if not _points.is_empty() or not _ripples.is_empty() or visible:
+		queue_redraw()
 
 
 func clear() -> void:
 	_points.clear()
+	_ripples.clear()
 	queue_redraw()
 
 
+## 0.15 when slow, up to 0.35 at full speed: always discreet.
+static func strength(speed: float) -> float:
+	return lerpf(0.15, 0.35, clampf(speed / 90.0, 0.0, 1.0))
+
+
 func _draw() -> void:
-	if _points.size() < 2 or not Settings.effects:
+	if not Settings.effects:
 		return
+	# Foam strip behind the stern: thin, tapering, fading quickly
 	var n := _points.size()
-	var left := PackedVector2Array()
-	var right := PackedVector2Array()
-	var center := PackedVector2Array()
-	var cols := PackedColorArray()
-	var center_cols := PackedColorArray()
-	for i in n:
-		var p := _points[n - 1 - i] # nyeste først, så linjen starter ved skibet
-		var age: float = p["age"]
-		var k := age / LIFE
-		var strength := clampf(float(p["speed"]) / 90.0, 0.25, 1.0)
-		var wobble := sin(float(p["seed"]) + _time * 2.0 + age * 3.0) * (1.0 + age * 1.5)
-		var out := beam * 0.45 + float(p["speed"]) * SPREAD * age + wobble
-		var bow: Vector2 = p["bow"]
-		var side: Vector2 = p["side"]
-		left.append(bow + side * out)
-		right.append(bow - side * out)
-		center.append(p["stern"] as Vector2 + side * wobble * 0.4)
-		var a := (1.0 - k) * (1.0 - k) * strength
-		cols.append(Color(1, 1, 1, 0.75 * a))
-		center_cols.append(Color(0.92, 0.98, 1.0, 0.28 * a))
-	# Skumstriben bag skibet: bred og blød
-	draw_polyline_colors(center, center_cols, beam * 0.9, true)
-	draw_polyline_colors(center, center_cols, beam * 0.35, true)
-	# De to arme i V'et: en bred svag bølge og en smal lys kam
-	var faint := PackedColorArray()
-	for c in cols:
-		faint.append(Color(c, c.a * 0.35))
-	for arm in [left, right]:
-		draw_polyline_colors(arm, faint, 6.0, true)
-		draw_polyline_colors(arm, cols, 2.0, true)
+	if n >= 2:
+		var line := PackedVector2Array()
+		var cols := PackedColorArray()
+		for i in n:
+			var p := _points[n - 1 - i] # newest first, so the line starts at the ship
+			var age: float = p["age"]
+			var k := age / LIFE
+			var wobble := sin(float(p["seed"]) + _time * 2.0 + age * 3.0) * (0.5 + age)
+			line.append(p["stern"] as Vector2 + (p["side"] as Vector2) * wobble)
+			cols.append(Color(0.92, 0.98, 1.0, (1.0 - k) * (1.0 - k) * strength(float(p["speed"]))))
+		draw_polyline_colors(line, cols, beam * 0.3, true)
+		var core := PackedColorArray()
+		for c in cols:
+			core.append(Color(1, 1, 1, c.a * 0.8))
+		draw_polyline_colors(line, core, maxf(beam * 0.08, 1.0), true)
+	# Small ripples at the bow: two short arcs that spread and fade
+	for r in _ripples:
+		var age: float = r["age"]
+		var k := age / RIPPLE_LIFE
+		var a := (1.0 - k) * strength(float(r["speed"])) * 0.9
+		var dir: Vector2 = r["dir"]
+		var radius := beam * (0.35 + k * 0.6)
+		var ang := dir.angle()
+		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang + 0.7, ang + 1.6, 8, Color(1, 1, 1, a), 1.0, true)
+		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang - 1.6, ang - 0.7, 8, Color(1, 1, 1, a), 1.0, true)

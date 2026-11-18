@@ -45,6 +45,7 @@ var boxes: Array = [] ## pakkede kasser i lastrummet: {"type": kasse-id, "conten
 var harbor_rep: Dictionary = {} ## fraktion -> samlet salg i guld (venskab). Gamle saves: havnenavn (flyttes ved load)
 var kingdom_wins: Dictionary = {} ## kongerige-id -> antal vundne dueller
 var kingdom_ready_at: Dictionary = {} ## kongerige-id -> unix-tid hvor det kan udfordres igen
+var visited_harbors: Dictionary = {} ## harbor name -> true: where you have docked (fast travel goes there)
 var world_time: float = 0.3 ## tid på døgnet 0..1 (0 = midnat, 0.5 = middag) – gemmes
 var night: float = 0.0 ## 0 = dag, 1 = nat (sættes af Sky)
 var weather: String = "clear" ## sættes af Sky
@@ -92,6 +93,7 @@ func reset() -> void:
 	next_captain_id = 1
 	kingdom_wins = {}
 	kingdom_ready_at = {}
+	visited_harbors = {Catalog.HARBOR_NAMES["free"][0]: true} # the start harbor
 	world_time = 0.3
 	saved_ship_position = null
 	saved_harbor_name = ""
@@ -779,7 +781,7 @@ func notify(text: String, color := Color.WHITE) -> void:
 
 const _SAVED_FIELDS := ["gold", "cannonballs", "food", "crew", "user_zoom", "shot", "owned_weapons",
 	"grenades", "selected_weapon", "cargo", "owned_ships", "active_ship_index", "unlocked_cosmetics", "towed",
-	"owned_gear", "equipped", "tools", "repair_kits", "boxes", "captains", "captain_slots", "next_captain_id", "harbor_rep", "kingdom_wins", "kingdom_ready_at", "world_time"]
+	"owned_gear", "equipped", "tools", "repair_kits", "boxes", "captains", "captain_slots", "next_captain_id", "harbor_rep", "kingdom_wins", "kingdom_ready_at", "world_time", "visited_harbors"]
 
 
 ## Gemmer spillet. Kaldes automatisk (hvert minut, ved havn og når spillet lukkes).
@@ -835,6 +837,10 @@ func load_game() -> bool:
 		saved_ship_position = null # verdenen er bygget om (10x større) – start i havnen
 	saved_ship_rotation = data.get("ship_rotation", 0.0)
 	saved_harbor_name = data.get("last_harbor", "")
+	# Older saves have no list of visited harbors: the start harbor and the last one you were in count
+	visited_harbors[Catalog.HARBOR_NAMES["free"][0]] = true
+	if saved_harbor_name != "":
+		visited_harbors[saved_harbor_name] = true
 	_loaded_data = data
 	for extra in _extra_loaders:
 		extra.call(data)
