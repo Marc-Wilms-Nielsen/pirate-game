@@ -66,14 +66,29 @@ func apply() -> void:
 	_set_volume("SFX", sfx_volume)
 	_set_volume("Music", music_volume)
 	if not DisplayServer.get_name() == "headless":
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+		_apply_window()
 	Engine.max_fps = max_fps
 	for ocean in get_tree().get_nodes_in_group("ocean"):
 		var mat := (ocean as CanvasItem).material as ShaderMaterial
 		if mat:
 			mat.set_shader_parameter("quality", water_quality)
 	changed.emit()
+
+
+## Only touch the window when the Display or V-Sync setting really changes it.
+## apply() runs for every setting (each step of a volume slider too), and setting the mode to
+## "windowed" on a maximized window restores it to its old, smaller size – which made the
+## window shrink whenever you turned the music down.
+func _apply_window() -> void:
+	var mode := DisplayServer.window_get_mode()
+	var is_full := mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if fullscreen and not is_full:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	elif not fullscreen and is_full:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	var want_vsync := DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
+	if DisplayServer.window_get_vsync_mode() != want_vsync:
+		DisplayServer.window_set_vsync_mode(want_vsync)
 
 
 func _set_volume(bus_name: String, value: float) -> void:
