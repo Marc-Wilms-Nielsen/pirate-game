@@ -212,6 +212,11 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Fast travel: you surface out at sea under full sail, heading for the pier, and must take in the sails and dock yourself
 - [x] On foot you can zoom out much less than at sea (closer view)
 
+## Round 16 – Anchor and a window bug
+- [x] Anchor: it bites at the bow with a little slack; when the chain runs out it snaps tight and yanks the ship around the anchor (shake, a heavy thud and the chain), then the ship swings to face the anchor
+- [x] Bug: dragging a volume slider shrank a maximized window – every settings change set the window mode to "windowed" again. Now the window is only touched when Display or V-Sync really changes
+- [x] tests/anchor_check.tscn and tests/settings_check.tscn
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne
