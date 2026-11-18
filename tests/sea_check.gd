@@ -19,7 +19,7 @@ func _ready() -> void:
 	Game.world_time = 0.45
 	Game.user_zoom = 0.7
 	var ship := get_tree().get_first_node_in_group("player_ship") as PlayerShip
-	var seabed := main.get_node("Seabed")
+	var seabed := get_tree().get_first_node_in_group("seabed")
 	# Find et vrag ude på dybt vand og sejl hen over det
 	var wreck: Node2D = null
 	for t in seabed.get_children():
@@ -32,6 +32,9 @@ func _ready() -> void:
 	for i in 200:
 		await get_tree().physics_frame
 	await _shot("s1_wake_over_wreck")
+	var seabed_view := main.find_child("SeabedView", true, false) as SubViewport
+	if seabed_view:
+		seabed_view.get_texture().get_image().save_png("user://test_shots/s1_seabed_image.png")
 	Game.cannonballs = 50
 	Game.active_ship()["cannons"] = 4
 	ship.refresh_from_config()
@@ -55,6 +58,14 @@ func _ready() -> void:
 	for i in 60:
 		await get_tree().process_frame
 	await _shot("s5_village")
+	# The same view with the water at half resolution (Settings → Water resolution 50%)
+	if "render_scale" in Settings:
+		var old_scale: float = Settings.render_scale
+		Settings.render_scale = 0.5
+		Settings.apply()
+		await _shot("s6_village_half_res")
+		Settings.render_scale = old_scale
+		Settings.apply()
 	get_tree().quit()
 
 

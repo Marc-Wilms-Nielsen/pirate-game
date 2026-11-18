@@ -96,9 +96,16 @@ func _update_light(delta: float) -> void:
 	_overlay.night = Game.night
 	# Lanterner tændes i skumringen
 	var glow := smoothstep(0.25, 0.7, Game.night + (1.0 - dark) * 0.6)
+	# Only lights on (or just off) the screen are switched on: each enabled light makes the
+	# renderer draw everything it touches once more, and the world has 200+ lanterns.
+	var vp := get_viewport()
+	var view := vp.get_canvas_transform().affine_inverse() * vp.get_visible_rect()
+	view = view.grow(250.0)
 	for l in get_tree().get_nodes_in_group("lanterns"):
 		var light := l as PointLight2D
-		light.enabled = glow > 0.02
+		light.enabled = glow > 0.02 and view.has_point(light.global_position)
+		if not light.enabled:
+			continue
 		light.energy = glow * 0.32 * float(light.get_meta("max_energy", 1.0)) * (0.9 + 0.1 * sin(Time.get_ticks_msec() * 0.008 + light.get_instance_id()))
 	# Havet: selvlysende plankton om natten og større bølger i stormvejr
 	if _ocean == null:
@@ -237,6 +244,7 @@ class WeatherOverlay extends Control:
 		_fog_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://scenes/world/fog.gdshader") as Shader
+		mat.set_shader_parameter("detail_tex", WaterNoise.detail_texture())
 		_fog_rect.material = mat
 		add_child(_fog_rect)
 

@@ -1,8 +1,10 @@
 class_name Seabed
 extends Node2D
-## Havbunden under det åbne hav: klitter, store sten og gamle skibsvrag.
-## Ligger under hav-shaderen (som er let gennemsigtig på dybt vand), så man ser ned i dybet.
-## Hele bunden skaleres en smule omkring kameraet (parallakse), så den føles langt nede.
+## The rocks and old shipwrecks on the floor of the open sea.
+## WaterLayers draws this node into a small off-screen image that the ocean shader blends in
+## under the see-through deep water; the sand dunes themselves are drawn by the ocean shader.
+## WaterLayers also scales the whole seabed slightly around the camera every frame (parallax),
+## so it feels far below the surface.
 
 const DEPTH_PARALLAX := 0.94 ## < 1: bunden bevæger sig lidt langsommere end overfladen
 const SWAY_SHADER := """
@@ -18,28 +20,13 @@ var world_seed: int = 1
 var world_radius: float = 14000.0
 const WRECK_CHANCE := 0.4 ## chance for et vrag i en celle (2000 x 2000 px)
 
-var _floor: ColorRect
-
-
 func _ready() -> void:
-	z_index = -11
-	z_as_relative = false
 	add_to_group("seabed")
-	_floor = ColorRect.new()
-	_floor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_floor.position = Vector2.ONE * -world_radius * 2.2
-	_floor.size = Vector2.ONE * world_radius * 4.4
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://scenes/world/seabed.gdshader") as Shader
-	mat.set_shader_parameter("quality", Settings.water_quality)
-	_floor.material = mat
-	add_child(_floor)
 	var sway := ShaderMaterial.new()
 	var sh := Shader.new()
 	sh.code = SWAY_SHADER
 	sway.shader = sh
 	material = sway
-	_floor.use_parent_material = false
 
 
 ## Spreder sten og vrag ud på det dybe vand i én verdenscelle (kaldes af WorldStreamer,
@@ -63,17 +50,6 @@ func populate_cell(cell: Vector2i, rect: Rect2) -> void:
 		add_child(thing)
 
 
-func _process(_delta: float) -> void:
-	var cam := get_viewport().get_camera_2d()
-	if cam == null:
-		return
-	var c := cam.get_screen_center_position()
-	scale = Vector2.ONE * DEPTH_PARALLAX
-	position = c * (1.0 - DEPTH_PARALLAX)
-
-
-func set_quality(q: int) -> void:
-	(_floor.material as ShaderMaterial).set_shader_parameter("quality", q)
 
 
 ## Én ting på bunden: en stenklynge eller et vrag. Tegnes én gang (statisk).

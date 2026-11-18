@@ -10,6 +10,8 @@ func _ready() -> void:
 	var mat := material as ShaderMaterial
 	if mat:
 		mat.set_shader_parameter("quality", Settings.water_quality)
+		mat.set_shader_parameter("wave_tex", WaterNoise.wave_texture())
+		mat.set_shader_parameter("detail_tex", WaterNoise.detail_texture())
 
 
 var _last_center := Vector2.INF
@@ -23,9 +25,12 @@ func _process(delta: float) -> void:
 		return
 	# Kun øerne tæt på kameraet sendes til shaderen – færre øer pr. pixel = hurtigere hav,
 	# og verdenen kan have mange flere øer end shaderen kan rumme.
-	var cam := get_viewport().get_camera_2d()
+	# Use the main window's camera: with a reduced water resolution this node lives inside an
+	# off-screen SubViewport (see water_layers.gd), which has no camera of its own.
+	var root := get_tree().root
+	var cam := root.get_camera_2d()
 	var center := cam.get_screen_center_position() if cam else Vector2.ZERO
-	var extent := (get_viewport_rect().size / (cam.zoom if cam else Vector2.ONE)).length() * 0.5 + 200.0
+	var extent := (root.get_visible_rect().size / (cam.zoom if cam else Vector2.ONE)).length() * 0.5 + 200.0
 	_refresh -= delta
 	if _refresh > 0.0 and center.distance_to(_last_center) < 120.0 and absf(extent - _last_extent) < 100.0:
 		return

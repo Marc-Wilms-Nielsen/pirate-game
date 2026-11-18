@@ -198,9 +198,10 @@ func _build_settings() -> void:
 	_option_row("V-Sync (prevents tearing)", "vsync", ["Off", "On"], [false, true])
 	_option_row("Max frames per second", "max_fps", ["30", "60", "120", "144", "Unlimited"], Settings.FPS_OPTIONS)
 	_option_row("Water quality", "water_quality", ["Low (fastest)", "Medium", "High"], [0, 1, 2])
+	_option_row("Water resolution", "render_scale", ["50% (fastest)", "75%", "100% (sharpest)"], Settings.RENDER_SCALES)
 	_option_row("Wakes and gun smoke", "effects", ["Off", "On"], [false, true])
 	_option_row("Show FPS counter", "show_fps", ["No", "Yes"], [false, true])
-	_settings_box.add_child(UiTheme.label("Is the game stuttering? Try water quality Medium or Low and turn on the FPS counter.", 9, UiTheme.MUTED))
+	_settings_box.add_child(UiTheme.label("Is the game stuttering? Lower the water resolution or quality and turn on the FPS counter.", 9, UiTheme.MUTED))
 	_settings_box.add_child(UiTheme.button("Reset to defaults", func() -> void:
 		Settings.reset_to_defaults()
 		_build_settings()))

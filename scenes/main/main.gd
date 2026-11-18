@@ -33,6 +33,7 @@ var _duel_menu: CanvasLayer
 var _escort_sync_pending := false
 var _castle_spots: Array[Vector2] = [] ## ingen træer eller kister lige ved slottene
 var _streamer: WorldStreamer
+var _seabed: Seabed
 var _place_grid: Dictionary = {} ## bruges kun mens øerne placeres
 var _player: PlayerCharacter = null
 var _spawn_timer: float = 0.0
@@ -61,12 +62,22 @@ func _ready() -> void:
 	_duel_menu.name = "DuelMenu"
 	add_child(_duel_menu)
 	_generate_world()
-	var seabed := Seabed.new()
-	seabed.name = "Seabed"
-	seabed.world_seed = world_seed
-	seabed.world_radius = world_radius
-	add_child(seabed)
-	move_child(seabed, 0) # under havet
+	_seabed = Seabed.new()
+	_seabed.name = "Seabed"
+	_seabed.world_seed = world_seed
+	_seabed.world_radius = world_radius
+	add_child(_seabed)
+	# WaterLayers draws the seabed into a small off-screen image for the ocean shader and,
+	# with Settings.render_scale < 1, draws the ocean itself at reduced resolution.
+	var layers := WaterLayers.new()
+	layers.name = "WaterLayers"
+	add_child(layers)
+	move_child(layers, $Ocean.get_index())
+	layers.setup($Ocean as ColorRect, _seabed)
+	if Settings.needs_auto_quality:
+		var auto := AutoQuality.new()
+		auto.name = "AutoQuality"
+		add_child(auto)
 
 	_ship.disembark_requested.connect(_on_disembark_requested)
 	_ship.dock_requested.connect(_on_dock_requested)
@@ -249,9 +260,8 @@ func _generate_world() -> void:
 				_add_resources(island))
 	# Havbunden bygges også bid for bid
 	_streamer.add_cell_builder(func(cell: Vector2i, rect: Rect2) -> void:
-		var seabed := get_node_or_null("Seabed") as Seabed
-		if seabed:
-			seabed.populate_cell(cell, rect))
+		if _seabed:
+			_seabed.populate_cell(cell, rect))
 
 
 func _village_name(index: int) -> String:
