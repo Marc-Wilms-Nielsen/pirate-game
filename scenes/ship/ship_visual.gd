@@ -13,6 +13,8 @@ var flag_color := Color(0.12, 0.12, 0.12)
 var flag_style: String = "small"
 var decorations: Dictionary = {}
 var deck_boxes: Array = [] ## kassetyper der står på dækket (vises oppefra)
+var style: Dictionary = {} ## colours and shapes from the config (ShipDrawer.style_of)
+var show_captain := false ## the player's ship: the captain stands at the helm while aboard
 
 var _time: float = 0.0
 var _sail_visual: float = 0.0
@@ -44,19 +46,25 @@ func _ready() -> void:
 	add_child(_body)
 	_hull = Layer.new()
 	_hull.draw_fn = func(ci: Node2D) -> void:
-		ShipDrawer.draw_hull(ci, look, hull_color, _time, _speed / 60.0)
-		ShipDrawer.draw_cannons(ci, look, cannons_per_side, _recoil)
-		ShipDrawer.draw_decorations(ci, look, decorations, flag_color, _time, false)
+		ShipDrawer.draw_hull(ci, look, hull_color, _time, _speed / 60.0, style)
+		ShipDrawer.draw_cannons(ci, look, cannons_per_side, _recoil, style.get("cannon", Color(0.15, 0.15, 0.17)))
+		ShipDrawer.draw_decorations(ci, look, decorations, flag_color, _time, false, flag_style, style.get("lantern", Color(1.0, 0.8, 0.3)))
 		ShipDrawer.draw_deck_boxes(ci, look, deck_boxes)
+		if show_captain:
+			ShipDrawer.draw_helm(ci, look)
+			if captain_aboard():
+				_draw_captain(ci)
 	_body.add_child(_hull)
 	_sails = Layer.new()
 	_sails.draw_fn = func(ci: Node2D) -> void:
-		ShipDrawer.draw_sails(ci, look, sail_color, _sail_visual, _time)
+		ShipDrawer.draw_sails(ci, look, sail_color, _sail_visual, _time, style.get("emblem", ""), style.get("emblem_color", Color.BLACK))
 		ShipDrawer.draw_decorations(ci, look, decorations, flag_color, _time, true, flag_style)
 	_body.add_child(_sails)
 
 	_soft_dot = _make_soft_dot()
 	_wake = Wake.new()
+	if style.has("wake"):
+		_wake.color = style["wake"]
 	add_child(_wake)
 	_place_wake()
 
@@ -67,11 +75,18 @@ func apply_config(config: Dictionary) -> void:
 	look = ship["look"]
 	size = float(look["length"]) / 58.0
 	cannons_per_side = config.get("cannons", 1)
-	sail_color = _lookup(Catalog.SAIL_COLORS, config.get("sail", "canvas"))
-	hull_color = _lookup(Catalog.HULL_PAINTS, config.get("hull", "oak"))
-	flag_color = _lookup(Catalog.FLAG_COLORS, config.get("flag", "black"))
+	style = ShipDrawer.style_of(config)
+	sail_color = style["sail"]
+	hull_color = style["hull"]
+	flag_color = style["flag"]
 	decorations = config.get("decorations", {})
 	flag_style = config.get("flag_style", "small")
+	if _wake:
+		_wake.color = style["wake"]
+	# The ship's lanterns shine in the chosen colour (ships without a choice keep their own)
+	if config.has("lantern"):
+		for light in find_children("*", "PointLight2D", true, false):
+			(light as PointLight2D).color = style["lantern"]
 	if _hull:
 		_place_wake()
 		_hull.queue_redraw()
@@ -110,7 +125,7 @@ func update_motion(speed: float, sail_factor: float, turn_velocity: float, delta
 	for side in _recoil:
 		_recoil[side] = maxf(_recoil[side] - delta * 3.0, 0.0)
 	_sails.queue_redraw()
-	if look.get("oars", false) or _recoil["left"] > 0.0 or _recoil["right"] > 0.0 or decorations.get("lanterns", false):
+	if look.get("oars", false) or _recoil["left"] > 0.0 or _recoil["right"] > 0.0 or decorations.get("lanterns", false) or show_captain:
 		_hull.queue_redraw()
 
 
@@ -184,6 +199,23 @@ func set_sinking(progress: float) -> void:
 	_body.rotation = progress * 0.6
 	_shadow.modulate.a = 1.0 - progress
 	_wake.modulate.a = 1.0 - progress
+
+
+## True while the captain is on board (not walking or swimming somewhere).
+func captain_aboard() -> bool:
+	return is_inside_tree() and get_tree().get_first_node_in_group("player_character") == null
+
+
+## The captain at the wheel, facing forward, rocking gently with the ship.
+func _draw_captain(ci: CanvasItem) -> void:
+	var p := ShipDrawer.helm_position(look)
+	var s := CaptainDrawer.current()
+	var size := 0.72
+	var facing := Vector2.RIGHT.rotated(sin(_time * 0.9) * 0.12)
+	ci.draw_set_transform(p, 0.0, Vector2.ONE)
+	CaptainDrawer.draw_body(ci, s, facing, 0.0, size)
+	CaptainDrawer.draw_head(ci, s, facing * 0.7, facing, size, _time)
+	ci.draw_set_transform(Vector2.ZERO)
 
 
 func _lookup(list: Array, id: String) -> Color:

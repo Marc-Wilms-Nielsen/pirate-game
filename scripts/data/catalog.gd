@@ -444,18 +444,32 @@ const SAIL_COLORS := [
 	{"id": "ocean", "name": "Ocean blue", "color": Color(0.55, 0.75, 1.0), "price": 150},
 	{"id": "sun", "name": "Sun yellow", "color": Color(1.0, 0.88, 0.45), "price": 150},
 	{"id": "black", "name": "Black", "color": Color(0.32, 0.32, 0.34), "price": 300},
+	{"id": "sand", "name": "Sand", "color": Color(0.95, 0.85, 0.65), "price": 100},
+	{"id": "forest", "name": "Forest green", "color": Color(0.55, 0.85, 0.55), "price": 150},
+	{"id": "rose", "name": "Rose", "color": Color(1.0, 0.7, 0.8), "price": 150},
+	{"id": "royal", "name": "Royal purple", "color": Color(0.7, 0.55, 0.95), "price": 200},
+	{"id": "midnight", "name": "Midnight", "color": Color(0.38, 0.42, 0.62), "price": 250},
 ]
-const HULL_PAINTS := [
+const HULL_PAINTS := [ ## multiplied with the ship type's own wood colour
 	{"id": "oak", "name": "Oak", "color": Color(1, 1, 1), "price": 0},
 	{"id": "dark", "name": "Dark tar", "color": Color(0.55, 0.5, 0.48), "price": 200},
 	{"id": "red", "name": "Red paint", "color": Color(1.0, 0.65, 0.6), "price": 200},
 	{"id": "teal", "name": "Turquoise", "color": Color(0.6, 0.95, 0.9), "price": 200},
+	{"id": "navy", "name": "Navy blue", "color": Color(0.55, 0.65, 1.05), "price": 200},
+	{"id": "forest", "name": "Forest green", "color": Color(0.65, 0.95, 0.6), "price": 200},
+	{"id": "black", "name": "Black lacquer", "color": Color(0.35, 0.33, 0.33), "price": 250},
+	{"id": "white", "name": "White", "color": Color(1.65, 1.6, 1.5), "price": 300},
+	{"id": "gold", "name": "Gold leaf", "color": Color(1.4, 1.15, 0.55), "price": 600},
 ]
 const FLAG_COLORS := [
 	{"id": "black", "name": "Black", "color": Color(0.12, 0.12, 0.12), "price": 0},
 	{"id": "red", "name": "Red", "color": Color(0.8, 0.15, 0.15), "price": 80},
 	{"id": "green", "name": "Green", "color": Color(0.2, 0.6, 0.3), "price": 80},
 	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.75, 0.2), "price": 120},
+	{"id": "blue", "name": "Blue", "color": Color(0.2, 0.35, 0.8), "price": 80},
+	{"id": "white", "name": "White", "color": Color(0.95, 0.95, 0.93), "price": 80},
+	{"id": "purple", "name": "Purple", "color": Color(0.5, 0.2, 0.65), "price": 100},
+	{"id": "orange", "name": "Orange", "color": Color(0.95, 0.5, 0.15), "price": 80},
 ]
 const DECORATIONS := {
 	"flag": {"name": "Masthead flag", "price": 100},
@@ -658,3 +672,228 @@ const QUEST_LOOT := {
 	"quest_boss": {"gold": [400, 900], "items": [["jewels", 2, 4, 1.0], ["stolen_jewels", 1, 3, 0.8], ["pearls", 2, 4, 0.8], ["ancient_coin", 1, 1, 0.5]]},
 	"sun_treasure": {"gold": [3000, 5000], "items": [["sun_crown", 1, 1, 1.0], ["gold_bar", 3, 6, 1.0], ["jewels", 4, 8, 1.0], ["ancient_coin", 1, 3, 1.0]]},
 }
+
+# --- Customization: ship and captain -------------------------------------------
+# Every part has a palette. The first option is free; the rest are bought once (the unlock is
+# kept in Game.unlocked_cosmetics as "<unlock>:<option id>", like the older sail/hull/flag
+# colours). An option without "color" (or "shape") means "as built": the ship type's or the
+# gear's own look. Ship choices live in the ship's config; the captain's in Game.captain_look.
+# The editor (scenes/ui/style_editor.gd) shows a live model while you try them on.
+
+const SAIL_EMBLEMS := [
+	{"id": "none", "name": "None", "price": 0},
+	{"id": "skull", "name": "Skull", "shape": "skull", "price": 300},
+	{"id": "sun", "name": "Sun", "shape": "sun", "price": 250},
+	{"id": "compass", "name": "Compass", "shape": "compass", "price": 250},
+	{"id": "anchor", "name": "Anchor", "shape": "anchor", "price": 200},
+	{"id": "swords", "name": "Crossed swords", "shape": "swords", "price": 300},
+	{"id": "star", "name": "Star", "shape": "star", "price": 200},
+]
+const EMBLEM_COLORS := [
+	{"id": "black", "name": "Black", "color": Color(0.12, 0.12, 0.13), "price": 0},
+	{"id": "white", "name": "White", "color": Color(0.96, 0.96, 0.94), "price": 60},
+	{"id": "red", "name": "Red", "color": Color(0.8, 0.16, 0.14), "price": 60},
+	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.76, 0.25), "price": 120},
+	{"id": "blue", "name": "Blue", "color": Color(0.2, 0.35, 0.8), "price": 60},
+	{"id": "green", "name": "Green", "color": Color(0.2, 0.55, 0.3), "price": 60},
+]
+const HULL_STRIPES := [
+	{"id": "none", "name": "None", "price": 0},
+	{"id": "white", "name": "White", "color": Color(0.95, 0.93, 0.88), "price": 120},
+	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.78, 0.3), "price": 250},
+	{"id": "red", "name": "Red", "color": Color(0.78, 0.2, 0.17), "price": 120},
+	{"id": "blue", "name": "Blue", "color": Color(0.22, 0.36, 0.75), "price": 120},
+	{"id": "black", "name": "Black", "color": Color(0.1, 0.1, 0.1), "price": 120},
+	{"id": "green", "name": "Green", "color": Color(0.22, 0.5, 0.3), "price": 120},
+]
+const DECK_COLORS := [
+	{"id": "natural", "name": "As built", "price": 0},
+	{"id": "honey", "name": "Honey pine", "color": Color(0.88, 0.72, 0.45), "price": 150},
+	{"id": "teak", "name": "Teak", "color": Color(0.72, 0.5, 0.3), "price": 150},
+	{"id": "driftwood", "name": "Driftwood", "color": Color(0.64, 0.62, 0.56), "price": 150},
+	{"id": "cedar", "name": "Red cedar", "color": Color(0.7, 0.38, 0.28), "price": 180},
+	{"id": "whitewashed", "name": "Whitewashed", "color": Color(0.9, 0.87, 0.8), "price": 200},
+	{"id": "mahogany", "name": "Mahogany", "color": Color(0.45, 0.22, 0.15), "price": 250},
+	{"id": "ebony", "name": "Ebony", "color": Color(0.27, 0.22, 0.19), "price": 300},
+]
+const RAIL_COLORS := [
+	{"id": "natural", "name": "As built", "price": 0},
+	{"id": "white", "name": "White", "color": Color(0.96, 0.95, 0.92, 0.9), "price": 100},
+	{"id": "black", "name": "Black", "color": Color(0.08, 0.08, 0.08, 0.85), "price": 100},
+	{"id": "red", "name": "Red", "color": Color(0.8, 0.2, 0.16, 0.9), "price": 100},
+	{"id": "blue", "name": "Blue", "color": Color(0.25, 0.4, 0.85, 0.9), "price": 100},
+	{"id": "gold", "name": "Gold", "color": Color(0.96, 0.8, 0.32, 0.95), "price": 250},
+]
+const CABIN_COLORS := [
+	{"id": "natural", "name": "As built", "price": 0},
+	{"id": "white", "name": "White", "color": Color(0.9, 0.88, 0.82), "price": 120},
+	{"id": "blue", "name": "Blue", "color": Color(0.3, 0.42, 0.7), "price": 120},
+	{"id": "red", "name": "Red", "color": Color(0.7, 0.24, 0.2), "price": 120},
+	{"id": "green", "name": "Green", "color": Color(0.3, 0.5, 0.32), "price": 120},
+	{"id": "black", "name": "Black", "color": Color(0.16, 0.15, 0.15), "price": 150},
+	{"id": "gold", "name": "Gold", "color": Color(0.9, 0.72, 0.3), "price": 300},
+]
+const CANNON_COLORS := [
+	{"id": "iron", "name": "Iron", "color": Color(0.15, 0.15, 0.17), "price": 0},
+	{"id": "black", "name": "Blackened", "color": Color(0.06, 0.06, 0.07), "price": 100},
+	{"id": "bronze", "name": "Bronze", "color": Color(0.6, 0.42, 0.2), "price": 200},
+	{"id": "verdigris", "name": "Verdigris", "color": Color(0.3, 0.55, 0.48), "price": 200},
+	{"id": "silver", "name": "Silver", "color": Color(0.7, 0.72, 0.76), "price": 300},
+	{"id": "gold", "name": "Gold", "color": Color(0.92, 0.74, 0.26), "price": 500},
+]
+const LANTERN_COLORS := [
+	{"id": "warm", "name": "Warm", "color": Color(1.0, 0.75, 0.42), "price": 0},
+	{"id": "white", "name": "White", "color": Color(1.0, 0.95, 0.9), "price": 120},
+	{"id": "gold", "name": "Gold", "color": Color(1.0, 0.85, 0.35), "price": 150},
+	{"id": "green", "name": "Green", "color": Color(0.45, 1.0, 0.55), "price": 150},
+	{"id": "blue", "name": "Blue", "color": Color(0.5, 0.7, 1.0), "price": 150},
+	{"id": "red", "name": "Red", "color": Color(1.0, 0.4, 0.35), "price": 150},
+	{"id": "violet", "name": "Violet", "color": Color(0.8, 0.5, 1.0), "price": 200},
+]
+const WAKE_COLORS := [
+	{"id": "foam", "name": "Sea foam", "color": Color(0.92, 0.98, 1.0), "price": 0},
+	{"id": "ice", "name": "Ice blue", "color": Color(0.7, 0.85, 1.0), "price": 150},
+	{"id": "turquoise", "name": "Turquoise", "color": Color(0.55, 1.0, 0.92), "price": 150},
+	{"id": "rose", "name": "Rose", "color": Color(1.0, 0.72, 0.86), "price": 200},
+	{"id": "violet", "name": "Violet", "color": Color(0.82, 0.66, 1.0), "price": 200},
+	{"id": "glow", "name": "Green glow", "color": Color(0.6, 1.0, 0.6), "price": 250},
+	{"id": "gold", "name": "Gold", "color": Color(1.0, 0.88, 0.5), "price": 300},
+]
+
+## Ship parts in the order the editor lists them. "key" is the config key; "unlock" the
+## prefix for bought options (defaults to key). Decorations are on/off parts ("deco").
+const SHIP_STYLE_PARTS := [
+	{"key": "sail", "name": "Sails", "options": SAIL_COLORS},
+	{"key": "emblem", "name": "Sail emblem", "options": SAIL_EMBLEMS},
+	{"key": "emblem_color", "name": "Emblem color", "options": EMBLEM_COLORS},
+	{"key": "hull", "name": "Hull paint", "options": HULL_PAINTS},
+	{"key": "stripe", "name": "Hull stripe", "options": HULL_STRIPES},
+	{"key": "deck", "name": "Deck planks", "options": DECK_COLORS},
+	{"key": "rail", "name": "Railing", "options": RAIL_COLORS},
+	{"key": "cabin_color", "name": "Cabin", "options": CABIN_COLORS},
+	{"key": "cannon_color", "name": "Cannons", "options": CANNON_COLORS},
+	{"key": "flag", "name": "Flag color", "options": FLAG_COLORS},
+	{"key": "flag_style", "name": "Flag style", "options": FLAG_STYLES, "unlock": "flagstyle"},
+	{"key": "lantern", "name": "Lantern light", "options": LANTERN_COLORS},
+	{"key": "wake", "name": "Wake", "options": WAKE_COLORS},
+	{"key": "deco_flag", "name": "Masthead flag", "deco": "flag"},
+	{"key": "deco_lanterns", "name": "Lanterns", "deco": "lanterns"},
+	{"key": "deco_figurehead", "name": "Figurehead", "deco": "figurehead"},
+	{"key": "deco_crows_nest", "name": "Crow's nest", "deco": "crows_nest"},
+]
+
+const SKIN_TONES := [
+	{"id": "light", "name": "Light", "color": Color(0.95, 0.78, 0.60), "price": 0},
+	{"id": "fair", "name": "Fair", "color": Color(0.99, 0.86, 0.74), "price": 20},
+	{"id": "rosy", "name": "Rosy", "color": Color(0.96, 0.74, 0.66), "price": 20},
+	{"id": "olive", "name": "Olive", "color": Color(0.82, 0.64, 0.45), "price": 20},
+	{"id": "tan", "name": "Tan", "color": Color(0.76, 0.55, 0.38), "price": 20},
+	{"id": "brown", "name": "Brown", "color": Color(0.58, 0.4, 0.27), "price": 20},
+	{"id": "dark", "name": "Dark", "color": Color(0.42, 0.28, 0.19), "price": 20},
+	{"id": "deep", "name": "Deep", "color": Color(0.3, 0.2, 0.14), "price": 20},
+]
+const HAIR_STYLES := [
+	{"id": "short", "name": "Short", "shape": "short", "price": 0},
+	{"id": "long", "name": "Long", "shape": "long", "price": 100},
+	{"id": "ponytail", "name": "Ponytail", "shape": "ponytail", "price": 120},
+	{"id": "braids", "name": "Braids", "shape": "braids", "price": 150},
+	{"id": "curly", "name": "Curly", "shape": "curly", "price": 120},
+	{"id": "bald", "name": "Bald", "shape": "bald", "price": 50},
+]
+const HAIR_COLORS := [
+	{"id": "brown", "name": "Brown", "color": Color(0.35, 0.22, 0.12), "price": 0},
+	{"id": "black", "name": "Black", "color": Color(0.1, 0.08, 0.07), "price": 40},
+	{"id": "blond", "name": "Blond", "color": Color(0.92, 0.78, 0.42), "price": 60},
+	{"id": "red", "name": "Red", "color": Color(0.72, 0.3, 0.15), "price": 80},
+	{"id": "grey", "name": "Grey", "color": Color(0.68, 0.68, 0.7), "price": 60},
+	{"id": "white", "name": "White", "color": Color(0.93, 0.93, 0.92), "price": 80},
+	{"id": "blue", "name": "Sea blue", "color": Color(0.3, 0.45, 0.85), "price": 200},
+	{"id": "green", "name": "Seaweed green", "color": Color(0.3, 0.62, 0.38), "price": 200},
+]
+const BEARDS := [
+	{"id": "none", "name": "Clean-shaven", "price": 0},
+	{"id": "stubble", "name": "Stubble", "shape": "stubble", "price": 40},
+	{"id": "mustache", "name": "Mustache", "shape": "mustache", "price": 80},
+	{"id": "goatee", "name": "Goatee", "shape": "goatee", "price": 100},
+	{"id": "full", "name": "Full beard", "shape": "full", "price": 120},
+	{"id": "braided", "name": "Braided beard", "shape": "braided", "price": 200},
+]
+const EYEPATCHES := [
+	{"id": "none", "name": "None", "price": 0},
+	{"id": "left", "name": "Left eye", "shape": "left", "price": 80},
+	{"id": "right", "name": "Right eye", "shape": "right", "price": 80},
+]
+const EARRINGS := [
+	{"id": "none", "name": "None", "price": 0},
+	{"id": "silver", "name": "Silver", "color": Color(0.82, 0.84, 0.88), "price": 80},
+	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.8, 0.3), "price": 120},
+	{"id": "double", "name": "Two gold", "color": Color(0.95, 0.8, 0.3), "shape": "double", "price": 200},
+]
+const GARMENT_COLORS := [ ## for the hat and the coat: "As made" keeps the gear's own colour
+	{"id": "gear", "name": "As made", "price": 0},
+	{"id": "black", "name": "Black", "color": Color(0.12, 0.12, 0.14), "price": 80},
+	{"id": "brown", "name": "Brown", "color": Color(0.4, 0.26, 0.15), "price": 60},
+	{"id": "red", "name": "Red", "color": Color(0.72, 0.18, 0.18), "price": 80},
+	{"id": "navy", "name": "Navy", "color": Color(0.14, 0.2, 0.42), "price": 80},
+	{"id": "green", "name": "Green", "color": Color(0.2, 0.42, 0.26), "price": 80},
+	{"id": "white", "name": "White", "color": Color(0.92, 0.92, 0.9), "price": 80},
+	{"id": "purple", "name": "Purple", "color": Color(0.4, 0.2, 0.5), "price": 120},
+	{"id": "sand", "name": "Sand", "color": Color(0.82, 0.72, 0.5), "price": 60},
+]
+const ACCENT_COLORS := [
+	{"id": "gear", "name": "As made", "price": 0},
+	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.8, 0.3), "price": 150},
+	{"id": "silver", "name": "Silver", "color": Color(0.8, 0.82, 0.86), "price": 100},
+	{"id": "white", "name": "White", "color": Color(0.95, 0.95, 0.93), "price": 60},
+	{"id": "black", "name": "Black", "color": Color(0.1, 0.1, 0.1), "price": 60},
+	{"id": "red", "name": "Red", "color": Color(0.8, 0.2, 0.18), "price": 60},
+]
+const SASH_COLORS := [
+	{"id": "none", "name": "None", "price": 0},
+	{"id": "red", "name": "Red", "color": Color(0.78, 0.16, 0.16), "price": 60},
+	{"id": "blue", "name": "Blue", "color": Color(0.2, 0.32, 0.72), "price": 60},
+	{"id": "green", "name": "Green", "color": Color(0.2, 0.5, 0.3), "price": 60},
+	{"id": "black", "name": "Black", "color": Color(0.1, 0.1, 0.11), "price": 60},
+	{"id": "purple", "name": "Purple", "color": Color(0.45, 0.2, 0.55), "price": 80},
+	{"id": "gold", "name": "Gold", "color": Color(0.95, 0.78, 0.3), "price": 120},
+]
+const TROUSER_COLORS := [
+	{"id": "canvas", "name": "Canvas", "color": Color(0.78, 0.72, 0.6), "price": 0},
+	{"id": "brown", "name": "Brown", "color": Color(0.38, 0.26, 0.16), "price": 40},
+	{"id": "black", "name": "Black", "color": Color(0.12, 0.12, 0.13), "price": 40},
+	{"id": "navy", "name": "Navy", "color": Color(0.16, 0.22, 0.42), "price": 50},
+	{"id": "red", "name": "Red", "color": Color(0.62, 0.18, 0.16), "price": 60},
+	{"id": "white", "name": "White", "color": Color(0.92, 0.92, 0.9), "price": 50},
+]
+const BOOT_COLORS := [
+	{"id": "brown", "name": "Brown", "color": Color(0.25, 0.18, 0.12), "price": 0},
+	{"id": "black", "name": "Black", "color": Color(0.08, 0.08, 0.08), "price": 40},
+	{"id": "tan", "name": "Tan", "color": Color(0.55, 0.38, 0.22), "price": 40},
+	{"id": "red", "name": "Red", "color": Color(0.55, 0.14, 0.12), "price": 80},
+	{"id": "grey", "name": "Grey", "color": Color(0.4, 0.4, 0.42), "price": 40},
+]
+
+## Captain parts in the order the editor lists them (keys of Game.captain_look).
+const CAPTAIN_STYLE_PARTS := [
+	{"key": "skin", "name": "Skin", "options": SKIN_TONES},
+	{"key": "hair", "name": "Hair", "options": HAIR_STYLES},
+	{"key": "hair_color", "name": "Hair color", "options": HAIR_COLORS},
+	{"key": "beard", "name": "Beard", "options": BEARDS},
+	{"key": "beard_color", "name": "Beard color", "options": HAIR_COLORS},
+	{"key": "eyepatch", "name": "Eye patch", "options": EYEPATCHES},
+	{"key": "earring", "name": "Earring", "options": EARRINGS},
+	{"key": "hat_color", "name": "Hat color", "options": GARMENT_COLORS},
+	{"key": "coat_color", "name": "Coat color", "options": GARMENT_COLORS},
+	{"key": "coat_accent", "name": "Coat trim", "options": ACCENT_COLORS},
+	{"key": "sash", "name": "Sash", "options": SASH_COLORS},
+	{"key": "trousers", "name": "Trousers", "options": TROUSER_COLORS},
+	{"key": "boots", "name": "Boots", "options": BOOT_COLORS},
+]
+
+
+## The option of a part with this id (or the part's first, free option).
+static func style_option(options: Array, id: String) -> Dictionary:
+	for o in options:
+		if o["id"] == id:
+			return o
+	return options[0]

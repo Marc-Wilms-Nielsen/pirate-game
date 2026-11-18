@@ -13,6 +13,7 @@ const RIPPLE_STEP := 0.35 ## seconds between bow ripples
 var length := 58.0
 var beam := 20.0
 var min_speed := 6.0
+var color := Color(0.92, 0.98, 1.0) ## the foam colour (a ship style choice)
 
 var _points: Array[Dictionary] = []
 var _ripples: Array[Dictionary] = []
@@ -78,11 +79,11 @@ func _draw() -> void:
 			var k := age / LIFE
 			var wobble := sin(float(p["seed"]) + _time * 2.0 + age * 3.0) * (0.5 + age)
 			line.append(p["stern"] as Vector2 + (p["side"] as Vector2) * wobble)
-			cols.append(Color(0.92, 0.98, 1.0, (1.0 - k) * (1.0 - k) * strength(float(p["speed"]))))
+			cols.append(Color(color, (1.0 - k) * (1.0 - k) * strength(float(p["speed"]))))
 		draw_polyline_colors(line, cols, beam * 0.3, true)
 		var core := PackedColorArray()
 		for c in cols:
-			core.append(Color(1, 1, 1, c.a * 0.8))
+			core.append(Color(color.lightened(0.5), c.a * 0.8))
 		draw_polyline_colors(line, core, maxf(beam * 0.08, 1.0), true)
 	# Small ripples at the bow: two short arcs that spread and fade
 	for r in _ripples:
@@ -92,5 +93,5 @@ func _draw() -> void:
 		var dir: Vector2 = r["dir"]
 		var radius := beam * (0.35 + k * 0.6)
 		var ang := dir.angle()
-		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang + 0.7, ang + 1.6, 8, Color(1, 1, 1, a), 1.0, true)
-		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang - 1.6, ang - 0.7, 8, Color(1, 1, 1, a), 1.0, true)
+		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang + 0.7, ang + 1.6, 8, Color(color.lightened(0.5), a), 1.0, true)
+		draw_arc(r["pos"] as Vector2 - dir * radius * 0.5, radius, ang - 1.6, ang - 0.7, 8, Color(color.lightened(0.5), a), 1.0, true)
