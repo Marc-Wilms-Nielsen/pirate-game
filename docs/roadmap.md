@@ -167,6 +167,25 @@ Bygget på én gang (kan nu spilles fra ende til anden):
 - [x] Map: faction colours, villages, starts zoomed on your ship, cached island shapes
 - [x] Performance measurements (tests/perf_check.tscn, tests/perf_parts.tscn) – see the FPS plan
 
+## Round 12 – FPS round
+Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080, RTX 3060:
+
+| Setting | Before | After |
+|---|---|---|
+| High, day | 1.39 | 0.17 (8x faster) |
+| High, night | 1.48 | 0.22 |
+| Medium, day | 0.59 | 0.13 |
+| Low, day | 0.26 | 0.10 |
+
+- [x] Step 1: wave noise pre-baked into two tiling textures (scenes/world/water_noise.gd) instead of ~30 noise functions per pixel
+- [x] Step 2: seabed drawn inside the water shader; rocks and wrecks come from a half-resolution off-screen image (scenes/world/water_layers.gd) – no second full-screen pass
+- [x] Step 3: "Water resolution" setting (50 / 75 / 100 %): the water is drawn smaller and stretched; ships, islands and UI stay sharp
+- [x] Step 4: auto quality on first launch (scenes/main/auto_quality.gd): 10 s of FPS, then High / Medium / Low
+- [x] Step 5: cheaper night – plankton glow reads the baked noise, fog too, and only lanterns on screen are switched on
+- [x] Step 6: performance budget – tests/water_bench.tscn fails (exit code 1) if any setting gets more than 10 % slower than tests/perf_budget.cfg for this GPU
+- [x] Step 7: 60 FPS cap by default (V-Sync was already on)
+- [ ] Playtest on a laptop with built-in graphics: FPS at the start harbor, at sea by day and at night
+
 ### Ideas for next round
 - [ ] Missioner/opgaver fra havnene (leveringer, dusører)
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne

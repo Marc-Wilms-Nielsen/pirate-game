@@ -27,6 +27,9 @@
 - `tests/visual_check.tscn` and `tests/ui_check.tscn` take quick screenshots (castle, beasts, night, menus, home island).
 - The world is streamed: anything placed in the world must be registered with `WorldStreamer` (`add` / `add_wide`), or it will never sleep.
 - `tests/perf_check.tscn` measures frame time per setting; `tests/perf_parts.tscn` measures CPU per subsystem.
+- The ocean shader reads pre-baked noise textures (`scenes/world/water_noise.gd`) – don't add per-pixel noise functions to full-screen shaders. The seabed's rocks/wrecks and the "Water resolution" setting go through `WaterLayers` (`scenes/world/water_layers.gd`).
+- After touching the water, fog or seabed, run `tests/water_bench.tscn` at 1920x1080: it fails if the water got more than 10 % slower than `tests/perf_budget.cfg`. Use `-- --update-budget` only for intended changes.
+- Tests that call `Game.delete_save()` delete the real save in the user data folder: back it up first when running them on the developer's machine.
 - Run `tests/smoke_test.tscn` after bigger changes – it exercises every system and saves screenshots to user://test_shots/.
 - Use static typing and Godot 4 syntax (not Godot 3).
 - Don't edit the `.godot/` folder.

@@ -731,6 +731,8 @@ func _test_fleet(ship: PlayerShip) -> void:
 	await _shot("34_broadside")
 	_check(get_tree().get_nodes_in_group("seabed").size() == 1 and (get_tree().get_first_node_in_group("seabed") as Node).get_child_count() > 20, "havbund med sten og vrag under det åbne hav")
 	_check(get_tree().get_nodes_in_group("seabed").size() == 1 and Game.world_root.get_children().any(func(n: Node) -> bool: return n is SmokeTrail), "kanonkuglerne trækker en røgstribe efter sig")
+	_check(AutoQuality.decide(60.0)["water_quality"] == 2 and AutoQuality.decide(45.0)["render_scale"] == 0.75 and AutoQuality.decide(25.0)["water_quality"] == 0, "auto quality picks High / Medium / Low from the measured FPS")
+	_check(get_tree().root.find_child("SeabedView", true, false) != null and Settings.max_fps > 0, "seabed drawn off-screen for the water shader, and the FPS is capped by default")
 	# Sjældne og episke fund
 	var rares := {"rare": 0, "epic": 0}
 	for i in 300:

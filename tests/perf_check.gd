@@ -3,11 +3,15 @@ extends Node
 ## Kør: godot res://tests/perf_check.tscn
 
 var main: Node
+var results := {} ## label -> average GPU ms per frame
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Engine.max_fps = 0
+	Settings.vsync = false
+	Settings.max_fps = 0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	OS.low_processor_usage_mode = false
 	OS.low_processor_usage_mode_sleep_usec = 0
 	Game.delete_save()
@@ -38,9 +42,13 @@ func _ready() -> void:
 	Settings.apply()
 	await _measure("water low")
 	Settings.water_quality = 2
+	Settings.render_scale = 0.5
 	Settings.apply()
-	await _toggle_measure("ocean hidden", main.get_node("Ocean"))
-	await _toggle_measure("seabed hidden", main.get_node("Seabed"))
+	await _measure("water high, 50% resolution")
+	Settings.render_scale = 1.0
+	Settings.apply()
+	await _toggle_measure("ocean hidden", get_tree().get_first_node_in_group("ocean") as CanvasItem)
+	await _toggle_measure("seabed hidden", get_tree().get_first_node_in_group("seabed") as CanvasItem)
 	Game.world_time = 0.0
 	await _measure("night")
 	var lights := get_tree().get_nodes_in_group("lanterns")
@@ -63,14 +71,21 @@ func _measure(label: String) -> void:
 	var proc := 0.0
 	var phys := 0.0
 	var draws := 0.0
-	var frames := 30
+	var gpu := 0.0
+	# GPU time per frame: what the graphics card spends drawing. On a fast desktop GPU the
+	# frame time hides this, but it scales with what a laptop's built-in graphics would feel.
+	var vp_rid := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp_rid, true)
+	var frames := 120
 	for i in frames:
 		await get_tree().process_frame
 		proc += Performance.get_monitor(Performance.TIME_PROCESS)
 		phys += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)
 		draws += Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
+		gpu += RenderingServer.viewport_get_measured_render_time_gpu(vp_rid)
 	var ms := (Time.get_ticks_usec() - t) / 1000.0 / frames
-	print("%-28s frame %.1f ms  process %.2f ms  physics %.2f ms  draws %d" % [label, ms, proc * 1000.0 / frames, phys * 1000.0 / frames, int(draws / frames)])
+	results[label] = gpu / frames
+	print("%-28s frame %.1f ms  gpu %.2f ms  process %.2f ms  physics %.2f ms  draws %d" % [label, ms, gpu / frames, proc * 1000.0 / frames, phys * 1000.0 / frames, int(draws / frames)])
 
 
 func _census() -> void:

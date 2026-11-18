@@ -13,10 +13,17 @@ var sfx_volume: float = 0.8
 var music_volume: float = 0.5
 var fullscreen: bool = false
 var vsync: bool = true
-var max_fps: int = 0
-var water_quality: int = 2 ## 0 = lav, 1 = mellem, 2 = høj
+var max_fps: int = 60 ## 60 by default: less heat and fan noise on laptops
+var water_quality: int = 2 ## 0 = low, 1 = medium, 2 = high
+var render_scale: float = 1.0 ## the water is drawn at this fraction of the window resolution
 var effects: bool = true ## kølvand og røg
 var show_fps: bool = false
+var auto_quality_done: bool = false ## set once AutoQuality has picked settings on first launch
+
+const RENDER_SCALES := [0.5, 0.75, 1.0]
+
+## True on the very first launch (no settings file yet): main.gd then runs AutoQuality.
+var needs_auto_quality: bool = false
 
 
 func _ready() -> void:
@@ -44,8 +51,6 @@ func apply() -> void:
 		var mat := (ocean as CanvasItem).material as ShaderMaterial
 		if mat:
 			mat.set_shader_parameter("quality", water_quality)
-	for seabed in get_tree().get_nodes_in_group("seabed"):
-		(seabed as Seabed).set_quality(water_quality)
 	changed.emit()
 
 
@@ -66,6 +71,7 @@ func save_settings() -> void:
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(PATH) != OK:
+		needs_auto_quality = not auto_quality_done
 		return
 	for key in _keys():
 		if cfg.has_section_key("settings", key):
@@ -79,8 +85,9 @@ func reset_to_defaults() -> void:
 	music_volume = 0.5
 	fullscreen = false
 	vsync = true
-	max_fps = 0
+	max_fps = 60
 	water_quality = 2
+	render_scale = 1.0
 	effects = true
 	show_fps = false
 	apply()
@@ -95,4 +102,4 @@ func set_value(key: String, value: Variant) -> void:
 
 
 func _keys() -> Array[String]:
-	return ["master_volume", "ambience_volume", "sfx_volume", "music_volume", "fullscreen", "vsync", "max_fps", "water_quality", "effects", "show_fps"]
+	return ["master_volume", "ambience_volume", "sfx_volume", "music_volume", "fullscreen", "vsync", "max_fps", "water_quality", "render_scale", "effects", "show_fps", "auto_quality_done"]
