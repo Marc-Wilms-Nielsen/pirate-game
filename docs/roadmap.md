@@ -213,7 +213,7 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] On foot you can zoom out much less than at sea (closer view)
 
 ## Round 16 – Anchor and a window bug
-- [x] Anchor: it bites at the bow with a little slack; when the chain runs out it snaps tight and yanks the ship around the anchor (shake, a heavy thud and the chain), then the ship swings to face the anchor
+- [x] Anchor: it goes over the side at the bow (the side you steer to, otherwise starboard) and brakes the ship smoothly, while the chain drags the ship in a curve towards that side and turns the bow to face the anchor (no sudden jolt; at most ~1 rad/s of turn)
 - [x] Bug: dragging a volume slider shrank a maximized window – every settings change set the window mode to "windowed" again. Now the window is only touched when Display or V-Sync really changes
 - [x] tests/anchor_check.tscn and tests/settings_check.tscn
 

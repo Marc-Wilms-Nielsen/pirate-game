@@ -43,15 +43,14 @@ var _move_dir := Vector2.RIGHT ## retningen skibet glider i (halter efter stævn
 var _creak_timer: float = 5.0
 var _input_cooldown: float = 0.0
 var _anchor_point := Vector2.ZERO
-var _chain_length := 0.0 ## how far the bow can get from the anchor (set when it is dropped)
-var _chain_taut := false
-var _yank_spin := 0.0 ## extra turning from the anchor chain's jolt (rad/s)
-const CHAIN_SLACK := 30.0 ## px of chain beyond the bow when the anchor is dropped at rest
-const CHAIN_PER_SPEED := 0.35 ## more chain runs out the faster you are going
-const YANK_MIN_SPEED := 18.0 ## px/s pulling outward before the chain gives a real jolt
-const YANK_SPIN_PER_SPEED := 22.0 ## px/s of outward speed per rad/s of spin from the jolt
-const YANK_SPIN_DAMPING := 0.9 ## how fast the swing dies out
-const SWING_PULL := 2.2 ## how strongly the chain turns the bow towards the anchor
+var _chain_length := 0.0 ## how far the chain reaches from the anchor (set when it is dropped)
+var _anchor_down := false ## the anchor lies on the seabed at _anchor_point (false = not placed yet)
+const ANCHOR_SIDE_OFFSET := 18.0 ## the anchor goes over the side at the bow, not straight ahead
+const CHAIN_SLACK := 30.0 ## px of chain that let the ship run on freely after the drop
+const CHAIN_PER_SPEED := 0.9 ## more chain runs out the faster you are going
+const DRAG_TURN := 2.6 ## how quickly the chain bends your course towards the anchor
+const SWING_RATE := 1.3 ## how quickly the bow turns to face the anchor
+const MAX_SWING := 1.1 ## rad/s: the fastest the chain may turn the ship (smooth, no jolt)
 var _food_timer: float = 0.0
 var _shake: float = 0.0
 var _sink_progress: float = 0.0
@@ -185,8 +184,6 @@ func place_at(pos: Vector2, rot: float) -> void:
 	velocity = Vector2.ZERO
 	sail_level = 0
 	anchored = false
-	_chain_taut = false
-	_yank_spin = 0.0
 	_move_dir = Vector2.RIGHT.rotated(rot)
 	_snap_interpolation()
 	_camera.reset_smoothing()
@@ -234,8 +231,8 @@ func _physics_process(delta: float) -> void:
 	var max_speed: float = stats["speed"] * (HUNGRY_SPEED if is_hungry() else 1.0) * Game.tow_speed_factor()
 	var target_speed := 0.0 if anchored else max_speed * SAIL_FACTORS[sail_level]
 	var rate: float = stats["acceleration"] if speed < target_speed else deceleration
-	if anchored and _chain_taut:
-		rate = anchor_brake # only once the chain has run out does the anchor really brake
+	if anchored:
+		rate = anchor_brake # a smooth, steady brake from the moment the anchor bites
 	speed = move_toward(speed, target_speed, rate * delta)
 
 	# Ankersving: kaster man ankeret i fart, kan man stadig styre – og skibet svinger
@@ -248,9 +245,7 @@ func _physics_process(delta: float) -> void:
 		steer_factor = 1.2 + 1.8 * speed_ratio
 	var target_turn: float = steer * stats["turn"] * steer_factor
 	_turn_velocity = lerpf(_turn_velocity, target_turn, 1.0 - exp(-(turn_smoothing * (2.0 if anchor_turn else 1.0)) * delta))
-	# The jolt from a tightening anchor chain spins the ship on its own and dies out slowly
-	_yank_spin *= exp(-YANK_SPIN_DAMPING * delta)
-	rotation += (_turn_velocity + _yank_spin) * delta
+	rotation += _turn_velocity * delta
 
 	var heading := Vector2.RIGHT.rotated(rotation)
 	_move_dir = _move_dir.slerp(heading, 1.0 - exp(-(1.2 if anchored else 6.0) * delta)).normalized()
@@ -262,6 +257,8 @@ func _physics_process(delta: float) -> void:
 		speed = move_toward(speed, 0.0, 80.0 * delta)
 	if anchored:
 		_anchor_chain(delta)
+	else:
+		_anchor_down = false # weighed: the next drop places the anchor afresh
 	_curr_xform = global_transform
 
 	_consume_food(delta)
@@ -361,14 +358,10 @@ func _handle_anchor_input() -> void:
 		return
 	anchored = not anchored
 	if anchored:
-		_anchor_point = to_global(Vector2(34, 0) * stats["size"])
-		# A little slack first: the ship runs on until the chain is out – then it snaps tight
-		_chain_length = CHAIN_SLACK + speed * CHAIN_PER_SPEED
-		_chain_taut = false
+		_drop_anchor_here()
 	if anchored:
 		# Ankeret rammer: et dumpt bump i stedet for en lang kæde
 		_anchor_bump.pitch_scale = randf_range(0.92, 1.05)
-		_anchor_bump.volume_db = -3.0 # the chain's jolt (_yank) plays it louder
 		_anchor_bump.play()
 	else:
 		_chain.pitch_scale = 1.2
@@ -376,52 +369,44 @@ func _handle_anchor_input() -> void:
 	anchor_changed.emit(anchored)
 
 
-## The anchor lies on the seabed where it was dropped; the chain holds the bow at most
-## _chain_length away. When the ship reaches the end of the chain it is yanked: the bow is
-## held back, the outward speed is lost, and the pull at the bow swings the whole ship around
-## the anchor. After that the ship keeps turning until its bow points at the anchor.
+## Puts the anchor on the seabed over the side at the bow: the side you are steering towards,
+## otherwise starboard. The faster you go, the more chain runs out.
+func _drop_anchor_here() -> void:
+	var steer := Input.get_axis("move_left", "move_right")
+	var side := signf(steer) if absf(steer) > 0.1 else 1.0
+	_anchor_point = to_global(Vector2(30, side * ANCHOR_SIDE_OFFSET) * stats["size"])
+	_chain_length = CHAIN_SLACK + speed * CHAIN_PER_SPEED
+	_anchor_down = true
+
+
+## The anchor lies on the seabed off one side of the bow. While the ship brakes smoothly, the
+## chain drags it towards that side: the course bends towards the anchor (more the more the
+## chain is stretched), and the bow slowly turns to face it, so the ship curves in towards the
+## anchor instead of drifting straight on. The chain gives like a spring if you run far past it.
 func _anchor_chain(delta: float) -> void:
+	if not _anchor_down:
+		_drop_anchor_here() # anchored some other way than the key: the anchor lands right here
 	var bow := to_global(Vector2(34, 0) * stats["size"])
-	var to_bow := bow - _anchor_point
-	var d := to_bow.length()
-	if d < 0.001:
+	var to_anchor := _anchor_point - bow
+	var d := to_anchor.length()
+	if d < 1.0:
 		return
-	var r := to_bow / d
-	# Lying at anchor: while the chain is (nearly) stretched, it turns the bow towards the
-	# anchor, the way a real anchored ship swings to face it
-	if d > _chain_length * 0.6:
-		_yank_spin += angle_difference(rotation, (-r).angle()) * SWING_PULL * delta
-	if d <= _chain_length:
-		_chain_taut = false
-		return
-	global_position -= r * (d - _chain_length) # the chain holds the bow back
-	var outward := velocity.dot(r)
-	if outward > 0.0:
-		var tangent := velocity - r * outward
-		if not _chain_taut and outward > YANK_MIN_SPEED:
-			_yank(outward, r)
-		# The ship keeps only the speed along the chain circle: it slings around the anchor
-		speed = tangent.length()
-		if speed > 0.5:
-			_move_dir = tangent / speed
-	_chain_taut = true
-
-
-## The chain snaps tight: a hard jolt that spins the ship around its bow.
-func _yank(outward: float, r: Vector2) -> void:
-	var heading := Vector2.from_angle(rotation)
-	# Pulled back at the bow, the stern swings on: the side depends on how the chain pulls
-	var side := signf(heading.cross(-r))
-	if side == 0.0:
-		side = 1.0 if randf() < 0.5 else -1.0
-	_yank_spin += side * clampf(outward / YANK_SPIN_PER_SPEED, 1.0, 4.0)
-	_shake = maxf(_shake, clampf(outward * 0.12, 3.0, 12.0))
-	_anchor_bump.pitch_scale = randf_range(0.7, 0.8)
-	_anchor_bump.volume_db = 0.0
-	_anchor_bump.play()
-	_chain.pitch_scale = 0.8
-	_chain.play()
-	Game.popup("The chain snaps tight!", global_position + Vector2(0, -26), Color(1.0, 0.85, 0.6))
+	var dir := to_anchor / d
+	var stretch := clampf((d - CHAIN_SLACK) / maxf(_chain_length - CHAIN_SLACK, 1.0), 0.0, 1.5)
+	if speed > 2.0:
+		# The course is dragged towards the anchor's side: a little at once, much more as the
+		# chain stretches
+		var pull := 0.35 + stretch
+		_move_dir = _move_dir.slerp(dir, 1.0 - exp(-DRAG_TURN * pull * delta)).normalized()
+	# The bow turns to face the anchor once the chain is stretched – eased, and never faster
+	# than MAX_SWING, so even passing right over the anchor stays smooth
+	if stretch > 0.0:
+		var diff := angle_difference(rotation, dir.angle())
+		var turn := clampf(diff * SWING_RATE * minf(stretch, 1.0), -MAX_SWING, MAX_SWING)
+		rotation += turn * delta
+	# Past the end of the chain it holds you back softly, like a spring – never a hard jolt
+	if d > _chain_length:
+		global_position += dir * (d - _chain_length) * (1.0 - exp(-4.0 * delta))
 
 
 func _process(delta: float) -> void:
@@ -458,7 +443,7 @@ func _update_anchor_visuals() -> void:
 	var from := to_global(Vector2(24, 0) * stats["size"])
 	var span := from.distance_to(_anchor_point)
 	var slack := maxf(_chain_length - span, 0.0)
-	if slack > 2.0 and span > 1.0: # loose chain: it sags to one side until it snaps tight
+	if slack > 2.0 and span > 1.0: # loose chain: it sags to one side until it is stretched
 		var side := (_anchor_point - from).orthogonal().normalized()
 		_rope.points = PackedVector2Array([from, (from + _anchor_point) * 0.5 + side * minf(slack * 0.4, 18.0), _anchor_point])
 	else:

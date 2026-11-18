@@ -1,6 +1,7 @@
 extends Node
-## The anchor: dropped at full speed, the ship runs on until the chain is out, then the chain
-## snaps tight and yanks the ship around the anchor. Dropped at rest, nothing dramatic happens.
+## The anchor: dropped at full speed it brakes the ship smoothly, and the chain drags the ship
+## towards the side the anchor went over (starboard by default, or the side you steer to),
+## instead of drifting straight on. No sudden jolt. Dropped at rest, nothing happens.
 ## Run: godot res://tests/anchor_check.tscn   (exits with code 1 on any failure)
 
 var main: Node
@@ -23,55 +24,78 @@ func _ready() -> void:
 	Game.user_zoom = 1.0
 	var ship := get_tree().get_first_node_in_group("player_ship") as PlayerShip
 	var spot := _deep_spot()
+
+	# 1. Full speed, no steering: the anchor goes over starboard (to the right of the heading)
+	var r := await _drop_at_speed(ship, spot, "", "a1")
+	_check(r["lateral"] > 25.0, "the ship is dragged towards the anchor's side (starboard), %d px off a straight line" % int(r["lateral"]))
+	_check(r["max_brake"] < ship.anchor_brake * 1.5, "smooth braking: at most %.0f px/s² (no sudden stop)" % r["max_brake"])
+	_check(r["max_turn"] < 2.0, "smooth turn: at most %.2f rad/s (no jolt)" % r["max_turn"])
+	_check(r["end_speed"] < 6.0, "the anchor stops the ship (%.0f px/s left)" % r["end_speed"])
+	_check(r["facing"] > 0.5, "the ship ends up with its bow towards the anchor")
+
+	# 2. Steering left while dropping: the anchor goes over port, and the ship is dragged left
+	var l := await _drop_at_speed(ship, spot + Vector2(0, 1200), "move_left", "a2")
+	_check(l["lateral"] < -25.0, "steering left drops it to port: dragged left, %d px" % int(l["lateral"]))
+
+	# 3. At rest: nothing happens
+	ship.place_at(spot + Vector2(0, 2400), 0.0)
+	ship.set_controlled(true)
+	await _frames(30)
+	var p0 := ship.global_position
+	var rot0 := ship.rotation
+	await _press_anchor()
+	await _frames(120)
+	_check(ship.global_position.distance_to(p0) < 8.0 and absf(angle_difference(rot0, ship.rotation)) < 0.3,
+		"dropped at rest, the ship stays put")
+	# 4. Anchored without the key (code sets it directly): the anchor lands right there, and the
+	# ship is not dragged off towards some old spot (it used to be pulled towards 0,0)
+	ship.place_at(spot + Vector2(0, 3600), 0.0)
+	ship.set_controlled(true)
+	await _frames(20)
+	ship.speed = float(ship.stats["speed"])
+	var here := ship.global_position
+	ship.anchored = true
+	await _frames(60)
+	_check(ship.global_position.distance_to(here) < 150.0, "anchored by code, the ship stays near where it was (%d px)" % int(ship.global_position.distance_to(here)))
+	ship.anchored = false
+	print("ANCHOR CHECK DONE. Failures: %d" % _failures)
+	get_tree().quit(1 if _failures > 0 else 0)
+
+
+## Sails at full speed heading east, drops the anchor (optionally while holding a steering
+## key) and measures what happens. lateral > 0 = dragged to starboard (south).
+func _drop_at_speed(ship: PlayerShip, spot: Vector2, steer: String, shot: String) -> Dictionary:
 	ship.place_at(spot, 0.0)
 	ship.set_controlled(true)
 	ship.sail_level = 2
-	await _frames(240) # up to full speed
+	await _frames(240) # up to full speed, heading east
+	var start := ship.global_position
 	var v0 := ship.speed
-	var rot0 := ship.rotation
-	print("     speed before the anchor: %.0f px/s" % v0)
+	if steer != "":
+		Input.action_press(steer)
 	await _press_anchor()
-	_check(ship.anchored, "the anchor is down")
-	var chain: float = ship.get("_chain_length")
+	if steer != "":
+		Input.action_release(steer)
 	var anchor: Vector2 = ship.get("_anchor_point")
-	var taut_at := -1
-	var max_spin := 0.0
-	var max_over := 0.0
-	var shots := 0
-	for i in 420: # 7 s
+	var max_brake := 0.0
+	var max_turn := 0.0
+	var last_speed := ship.speed
+	var last_rot := ship.rotation
+	for i in 300: # 5 s
 		await get_tree().physics_frame
-		if taut_at < 0 and ship.get("_chain_taut"):
-			taut_at = i
-		max_spin = maxf(max_spin, absf(float(ship.get("_yank_spin"))))
-		var bow := ship.to_global(Vector2(34, 0) * float(ship.stats["size"]))
-		max_over = maxf(max_over, bow.distance_to(anchor) - chain)
-		if taut_at >= 0 and shots < 3 and i == taut_at + 15 + shots * 30:
-			await _shot("a%d_swing" % (shots + 1))
-			shots += 1
-	var turned := absf(rad_to_deg(angle_difference(rot0, ship.rotation)))
-	print("     chain %.0f px, snapped tight after %.2f s, max spin %.2f rad/s, turned %.0f°" % [chain, taut_at / 60.0, max_spin, turned])
-	_check(taut_at > 3, "the ship runs on a moment before the chain snaps tight")
-	_check(max_spin > 1.0, "the chain yanks the ship into a hard spin")
-	_check(turned > 60.0, "the ship is pulled around (%d°)" % int(turned))
-	_check(max_over < 3.0, "the chain holds the bow (at most %.1f px past it)" % max_over)
-	_check(ship.speed < 12.0, "the anchor stops the ship (%.0f px/s left)" % ship.speed)
-	var bow_dir := (anchor - ship.global_position).normalized()
-	_check(Vector2.from_angle(ship.rotation).dot(bow_dir) > 0.5, "the ship ends up with its bow towards the anchor")
-	await _press_anchor()
-	_check(not ship.anchored, "the anchor comes up again")
-
-	# At rest: no jolt
-	ship.place_at(spot + Vector2(0, 600), 0.0)
-	ship.set_controlled(true)
-	await _frames(30)
-	await _press_anchor()
-	var calm_spin := 0.0
-	for i in 120:
-		await get_tree().physics_frame
-		calm_spin = maxf(calm_spin, absf(float(ship.get("_yank_spin"))))
-	_check(calm_spin < 0.3, "dropped at rest, the anchor doesn't yank (spin %.2f)" % calm_spin)
-	print("ANCHOR CHECK DONE. Failures: %d" % _failures)
-	get_tree().quit(1 if _failures > 0 else 0)
+		var dt := 1.0 / 60.0
+		max_brake = maxf(max_brake, (last_speed - ship.speed) / dt)
+		max_turn = maxf(max_turn, absf(angle_difference(last_rot, ship.rotation)) / dt)
+		last_speed = ship.speed
+		last_rot = ship.rotation
+		if i == 90:
+			await _shot(shot + "_dragged")
+	var lateral := ship.global_position.y - start.y
+	var facing := Vector2.from_angle(ship.rotation).dot((anchor - ship.global_position).normalized())
+	print("     %s: %.0f px/s → %.0f, lateral %d px, max brake %.0f, max turn %.2f rad/s" % [
+		"steer " + steer if steer != "" else "straight", v0, ship.speed, int(lateral), max_brake, max_turn])
+	await _press_anchor() # weigh anchor again
+	return {"lateral": lateral, "max_brake": max_brake, "max_turn": max_turn, "end_speed": ship.speed, "facing": facing}
 
 
 func _press_anchor() -> void:
@@ -88,9 +112,9 @@ func _deep_spot() -> Vector2:
 		var p := Vector2.from_angle(i * 2.4) * (2500.0 + i * 40.0)
 		var ok := true
 		for k in 8:
-			if Game.water_depth(p + Vector2.from_angle(k * TAU / 8.0) * 500.0) < 1.0:
-				ok = false
-				break
+			for dist in [600.0, 1800.0, 3000.0]:
+				if Game.water_depth(p + Vector2.from_angle(k * TAU / 8.0) * float(dist)) < 1.0:
+					ok = false
 		if ok and Game.water_depth(p) >= 1.0:
 			return p
 	return Vector2(0, 4000)
