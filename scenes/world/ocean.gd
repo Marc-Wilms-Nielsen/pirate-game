@@ -2,22 +2,52 @@ extends ColorRect
 ## Sender øernes form og position til hav-shaderen hvert frame,
 ## så shaderen kan tegne lavt, klart vand omkring dem.
 
-const MAX_ISLANDS := 16
+const MAX_ISLANDS := 32
 
 
-func _process(_delta: float) -> void:
+func _ready() -> void:
+	add_to_group("ocean")
+	var mat := material as ShaderMaterial
+	if mat:
+		mat.set_shader_parameter("quality", Settings.water_quality)
+
+
+var _last_center := Vector2.INF
+var _last_extent := 0.0
+var _refresh := 0.0
+
+
+func _process(delta: float) -> void:
 	var mat := material as ShaderMaterial
 	if mat == null:
 		return
+	# Kun øerne tæt på kameraet sendes til shaderen – færre øer pr. pixel = hurtigere hav,
+	# og verdenen kan have mange flere øer end shaderen kan rumme.
+	var cam := get_viewport().get_camera_2d()
+	var center := cam.get_screen_center_position() if cam else Vector2.ZERO
+	var extent := (get_viewport_rect().size / (cam.zoom if cam else Vector2.ONE)).length() * 0.5 + 200.0
+	_refresh -= delta
+	if _refresh > 0.0 and center.distance_to(_last_center) < 120.0 and absf(extent - _last_extent) < 100.0:
+		return
+	_refresh = 0.5
+	_last_center = center
+	_last_extent = extent
+	var near: Array = []
+	for island in get_tree().get_nodes_in_group("islands"):
+		var isl := island as Island
+		var reach := isl.radius * 1.47 * isl.lagoon_size
+		var d := isl.global_position.distance_to(center) - reach
+		if d < extent + 300.0:
+			near.append([d, isl])
+	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var data_a := PackedVector4Array()
 	var data_b := PackedVector4Array()
-	for island in get_tree().get_nodes_in_group("islands"):
+	for entry in near:
 		if data_a.size() >= MAX_ISLANDS:
 			break
-		if island.has_method("get_shape_data"):
-			var data: Array = island.call("get_shape_data")
-			data_a.append(data[0])
-			data_b.append(data[1])
+		var data: Array = (entry[1] as Island).get_shape_data()
+		data_a.append(data[0])
+		data_b.append(data[1])
 	var count := data_a.size()
 	while data_a.size() < MAX_ISLANDS:
 		data_a.append(Vector4.ZERO)

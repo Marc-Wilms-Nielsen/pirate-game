@@ -1,44 +1,37 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/ocean.tscn" id="2_ocean"]
-[ext_resource type="PackedScene" path="res://scenes/world/island.tscn" id="3_island"]
 [ext_resource type="PackedScene" path="res://scenes/ship/ship.tscn" id="4_ship"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+[ext_resource type="Script" path="res://scenes/ui/pause_menu.gd" id="6_pause"]
+[ext_resource type="Script" path="res://scenes/ui/harbor_menu.gd" id="7_harbor"]
+[ext_resource type="Script" path="res://scenes/ui/boarding_menu.gd" id="8_boarding"]
+[ext_resource type="Script" path="res://scenes/ui/home_menu.gd" id="9_home"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
 [node name="Ocean" parent="." instance=ExtResource("2_ocean")]
+offset_left = -56000.0
+offset_top = -56000.0
+offset_right = 56000.0
+offset_bottom = 56000.0
 
-[node name="Islands" type="Node2D" parent="."]
-
-[node name="Island1" parent="Islands" instance=ExtResource("3_island")]
-position = Vector2(320, -40)
-radius = 100.0
-seed_value = 3
-palm_count = 3
-
-[node name="Island2" parent="Islands" instance=ExtResource("3_island")]
-position = Vector2(-420, 420)
-radius = 160.0
-seed_value = 7
-palm_count = 7
-
-[node name="Island3" parent="Islands" instance=ExtResource("3_island")]
-position = Vector2(950, 520)
-radius = 70.0
-seed_value = 12
-palm_count = 2
-gull_count = 1
-
-[node name="Island4" parent="Islands" instance=ExtResource("3_island")]
-position = Vector2(150, -750)
-radius = 140.0
-seed_value = 21
-palm_count = 5
-gull_count = 3
+[node name="World" type="Node2D" parent="."]
 
 [node name="Ship" parent="." instance=ExtResource("4_ship")]
 
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("6_pause")
+
+[node name="HarborMenu" type="CanvasLayer" parent="."]
+script = ExtResource("7_harbor")
+
+[node name="BoardingMenu" type="CanvasLayer" parent="."]
+script = ExtResource("8_boarding")
+
+[node name="HomeMenu" type="CanvasLayer" parent="."]
+script = ExtResource("9_home")

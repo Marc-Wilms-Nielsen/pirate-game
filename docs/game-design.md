@@ -73,8 +73,14 @@ Alle opgraderinger defineres som data (Godot Resources), så de kan balanceres u
 | Hop i vandet (når skibet ligger stille) / gå om bord | F |
 | Gå (på land) / svøm (i vandet) | WASD / piletaster |
 | Affyr kanoner (venstre/højre) | Q / E |
-| Interager (loot, handel) | F |
-| Angreb / skyd | Venstre / højre museknap |
+| Læg til kaj (i en havn) / åbn kiste | F |
+| Menu / kort | Esc / M |
+| Zoom | Musehjul / + / – |
+| Reparationssæt (til søs) | R |
+| Fæld træ / hak sten / fisk / åbn kiste (til fods) | F |
+| Våben (til fods) | 1–8, venstreklik |
+| Entr skib (når du ligger op ad det) | F |
+| Sværdhug (til fods) | Mellemrum / venstreklik |
 
 ## Udenfor scope (indtil videre)
 Multiplayer, crew-styring, storyline/quests, procedurelt genereret verden.
