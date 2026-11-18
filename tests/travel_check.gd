@@ -105,7 +105,10 @@ func _ready() -> void:
 		if waited == 150:
 			await _shot("t4_rising")
 	_check(not travel.busy, "the trip finishes (%d frames)" % waited)
-	_check(ship.global_position.distance_to(dest.dock_position()) < 5.0, "you surface next to %s's pier" % dest.harbor_name)
+	var to_dock := dest.dock_position() - ship.global_position
+	_check(to_dock.length() > 150.0 and to_dock.length() < 650.0, "you surface out at sea off %s (%d px from the pier)" % [dest.harbor_name, int(to_dock.length())])
+	_check(ship.sail_level == PlayerShip.SAIL_FACTORS.size() - 1 and ship.speed > 10.0, "you arrive under full sail and moving (%.0f px/s)" % ship.speed)
+	_check(Vector2.from_angle(ship.rotation).dot(to_dock.normalized()) > 0.9, "heading straight for the pier")
 	_check(Game.gold == gold - cost, "the trip cost %d gold" % cost)
 	_check(ship.controlled, "you can sail again")
 	_check(is_equal_approx((ship.visual.get("_body") as Node2D).modulate.a, 1.0), "your ship is fully above water again")
@@ -114,7 +117,25 @@ func _ready() -> void:
 	await _frames(10)
 	var tow_visuals: Array = get_tree().get_first_node_in_group("tow_train").get("_visuals")
 	_check(tow_visuals.size() == 1 and (tow_visuals[0] as Node2D).global_position.distance_to(ship.global_position) < 200.0, "the ship in tow came along")
+	# Taking in the sails right away lets you coast to a stop at the pier
+	ship.sail_level = 0
+	var glide_frames := 0
+	while ship.speed > 3.0 and glide_frames < 3000:
+		await get_tree().process_frame
+		glide_frames += 1
+	var left := ship.global_position.distance_to(dest.dock_position())
+	_check(ship.speed <= 3.0 and left < Harbor.DOCK_RADIUS + 40.0, "sails down at once: you coast to a stop at the pier (%d px left)" % int(left))
 	await _shot("t5_arrived")
+
+	# A new voyage starts with no gold (tests get their own start gold)
+	_check(Game.START_GOLD == 0, "a new voyage starts with 0 gold")
+
+	# On foot you can't zoom out as far as at sea
+	var cam := ZoomCamera.new()
+	cam.min_user_zoom = ZoomCamera.ON_FOOT_MIN_ZOOM
+	Game.user_zoom = ZoomCamera.MIN_USER_ZOOM
+	_check(is_equal_approx(cam.effective_user_zoom(), ZoomCamera.ON_FOOT_MIN_ZOOM), "on foot the view stays close even if you zoomed far out at sea")
+	cam.free()
 	print("TRAVEL CHECK DONE. Failures: %d" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
 

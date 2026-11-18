@@ -28,6 +28,7 @@ var needs_auto_quality: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	UiTheme.install_default_font() # the game's book font for the HUD, map and everything else
 	for bus_name in BUSES:
 		if AudioServer.get_bus_index(bus_name) == -1:
 			AudioServer.add_bus()

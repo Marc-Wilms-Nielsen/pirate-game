@@ -13,6 +13,16 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(360, 240)
 	# Fast travel bar: shown at the bottom of the map when a harbor is picked
 	_bar = PanelContainer.new()
+	var bar_style := StyleBoxFlat.new() # a slim bar: less padding than a full menu panel
+	bar_style.bg_color = UiTheme.BG
+	bar_style.set_corner_radius_all(4)
+	bar_style.set_border_width_all(1)
+	bar_style.border_color = UiTheme.GOLD_EDGE
+	bar_style.content_margin_left = 10
+	bar_style.content_margin_right = 6
+	bar_style.content_margin_top = 4
+	bar_style.content_margin_bottom = 4
+	_bar.add_theme_stylebox_override("panel", bar_style)
 	_bar.visible = false
 	add_child(_bar)
 	var row := HBoxContainer.new()
@@ -305,7 +315,7 @@ func _draw_legend(pos: Vector2) -> void:
 	]
 	draw_string(_font, pos + Vector2(0, 8), "Legend", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.ACCENT)
 	for i in rows.size():
-		var y := pos.y + 20.0 + i * 12.0
+		var y := pos.y + 20.0 + i * 11.0
 		draw_circle(Vector2(pos.x + 4, y - 3), 3.0, rows[i][0], true, -1.0, true)
 		draw_string(_font, Vector2(pos.x + 12, y), rows[i][1], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UiTheme.TEXT)
 

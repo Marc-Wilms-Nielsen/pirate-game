@@ -47,6 +47,8 @@ func _ready() -> void:
 	add_to_group("player_character")
 	WorldSky.add_lantern(self, Vector2.ZERO, 70.0, Color(1.0, 0.85, 0.6), 0.7)
 	($Camera2D as ZoomCamera).base_zoom = 2.0
+	# On foot the view stays close and personal: you can zoom out much less than at sea
+	($Camera2D as ZoomCamera).min_user_zoom = ZoomCamera.ON_FOOT_MIN_ZOOM
 	($Camera2D as Camera2D).top_level = true
 	_splash = AudioStreamPlayer.new()
 	_splash.stream = load("res://assets/audio/sfx/splash.wav") as AudioStream

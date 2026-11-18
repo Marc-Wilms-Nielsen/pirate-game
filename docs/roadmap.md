@@ -204,6 +204,14 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Blocked while pirates attack, while the captain is ashore, or without enough gold (the reason shows on the map)
 - [x] tests/travel_check.tscn
 
+## Round 15 – Elegant UI and small polish
+- [x] Fonts: Pirata One for headings, buttons and tabs; IM FELL English for body text, the HUD and the map (both SIL OFL, see CREDITS.md)
+- [x] Text ~10 % smaller, more room inside panels and buttons, thin gold edges, gold line under the open tab
+- [x] New deep, soft wooden button sound (tools/generate_click.gd)
+- [x] A new voyage starts with 0 gold; the test top-up to 1,000,000 is gone (tests get their own start gold)
+- [x] Fast travel: you surface out at sea under full sail, heading for the pier, and must take in the sails and dock yourself
+- [x] On foot you can zoom out much less than at sea (closer view)
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne
