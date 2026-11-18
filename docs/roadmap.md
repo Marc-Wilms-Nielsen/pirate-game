@@ -184,6 +184,8 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Step 5: cheaper night – plankton glow reads the baked noise, fog too, and only lanterns on screen are switched on
 - [x] Step 6: performance budget – tests/water_bench.tscn fails (exit code 1) if any setting gets more than 10 % slower than tests/perf_budget.cfg for this GPU
 - [x] Step 7: 60 FPS cap by default (V-Sync was already on)
+- [x] Small laptop screens: the window shrinks to fit above the taskbar on startup (the 1280 x 720 window plus title bar is taller than a 1366 x 768 screen allows)
+- [x] Long menu texts wrap; the harbor's Captains tab no longer pushes its buttons off-screen. New test: tests/ui_fit.tscn
 - [ ] Playtest on a laptop with built-in graphics: FPS at the start harbor, at sea by day and at night
 
 ### Ideas for next round

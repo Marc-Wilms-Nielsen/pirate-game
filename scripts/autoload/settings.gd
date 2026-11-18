@@ -36,6 +36,27 @@ func _ready() -> void:
 			AudioServer.set_bus_send(index, "Master")
 	load_settings()
 	apply()
+	_fit_window_to_screen.call_deferred()
+
+
+## The game opens a 1280 x 720 window. On a small laptop screen (e.g. 1366 x 768) that window
+## plus its title bar is taller than the space above the taskbar, so the bottom of the game
+## (and of every menu) is hidden. Shrink it to fit, keeping 16:9; everything scales with it.
+func _fit_window_to_screen() -> void:
+	if DisplayServer.get_name() == "headless" or fullscreen:
+		return
+	var screen := DisplayServer.window_get_current_screen()
+	var usable := DisplayServer.screen_get_usable_rect(screen) # excludes the taskbar
+	var size := DisplayServer.window_get_size()
+	var deco := DisplayServer.window_get_size_with_decorations() - size # title bar and borders
+	var room := usable.size - deco
+	if size.x <= room.x and size.y <= room.y:
+		return
+	var s := minf(float(room.x) / size.x, float(room.y) / size.y) * 0.97
+	var new_size := Vector2i(floori(size.x * s), floori(size.y * s))
+	DisplayServer.window_set_size(new_size)
+	var outer := new_size + deco
+	DisplayServer.window_set_position(usable.position + (usable.size - outer) / 2 + Vector2i(deco.x / 2, deco.y - deco.x / 2))
 
 
 func apply() -> void:

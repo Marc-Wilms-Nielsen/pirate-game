@@ -52,6 +52,12 @@ static func label(text: String, size := 10, color := TEXT) -> Label:
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
+	# Long sentences wrap onto more lines. Otherwise one long line forces its whole menu panel
+	# wider than the screen, and buttons on the right end up off-screen.
+	if text.length() > 60:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.custom_minimum_size.x = 160.0
 	return l
 
 

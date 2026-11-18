@@ -69,10 +69,12 @@ func _press_all_buttons(node: Node) -> int:
 	return count
 
 
-func _count_balls() -> int:
+## Counts cannonballs fired by `from` (all of them when null). Escorts and pirates nearby
+## also fire, so the broadside check must only count the player's own.
+func _count_balls(from: Node = null) -> int:
 	var n := 0
 	for c in Game.world_root.get_children():
-		if c is Cannonball:
+		if c is Cannonball and (from == null or (c as Cannonball).shooter == from):
 			n += 1
 	return n
 
@@ -721,7 +723,7 @@ func _test_fleet(ship: PlayerShip) -> void:
 	var last := 0
 	while Time.get_ticks_msec() - t0 < 1500:
 		await get_tree().process_frame
-		var n := _count_balls()
+		var n := _count_balls(ship)
 		if n > last:
 			for k in n - last:
 				times.append(Time.get_ticks_msec() - t0)
