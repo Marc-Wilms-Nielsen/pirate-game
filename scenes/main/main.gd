@@ -275,6 +275,11 @@ func _generate_world() -> void:
 			_streamer.add_wide(island, island.radius * 1.5 * island.lagoon_size, func() -> void:
 				_populate_island(island, has_harbor)
 				_add_resources(island))
+	# Harbors on the big mainlands sat inland (their pier on dry land): move them out to the coast
+	for node in _world.get_children():
+		var isl := node as Island
+		if isl and isl.harbor:
+			_harbor_to_shore(isl.harbor)
 	# Havbunden bygges også bid for bid
 	_streamer.add_cell_builder(func(cell: Vector2i, rect: Rect2) -> void:
 		if _seabed:
@@ -472,6 +477,17 @@ func _add_castle(island: Island, index: int, rng: RandomNumberGenerator) -> void
 
 
 ## Tilfældigt punkt på land, der ikke ligger oven i et slot.
+## Moves a harbor out along its direction until the water starts just past its waterfront.
+## (Harbors on the big mainlands were placed ~250 px inland, so their pier stood on dry land
+## and they could not be reached from the sea.)
+func _harbor_to_shore(h: Harbor) -> void:
+	var out := Vector2.from_angle(h.global_rotation)
+	for i in 80:
+		if not Game.is_land(h.to_global(Vector2(15, 0))):
+			return
+		h.global_position += out * 10.0
+
+
 func _land_point(island: Island, min_f: float, max_f: float) -> Vector2:
 	var p := island.random_land_point(min_f, max_f)
 	for attempt in 6:
