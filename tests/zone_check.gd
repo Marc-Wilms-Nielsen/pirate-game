@@ -32,7 +32,7 @@ func _ready() -> void:
 	for z in zones.zones:
 		names[z["name"]] = true
 		print("     %-24s %-18s %-8s %d corners" % [z["name"], z["subtitle"], z["kind"], (z["polygon"] as PackedVector2Array).size()])
-	_check(zones.zones.size() == 1 + 6 + WorldZones.SEA_ZONES, "%d named areas: home, 6 mainlands, %d open sea" % [zones.zones.size(), WorldZones.SEA_ZONES])
+	_check(zones.zones.size() == 1 + 6 + WorldZones.SEA_ZONES + 1, "%d named areas: home, 6 mainlands, %d open sea, the canal city" % [zones.zones.size(), WorldZones.SEA_ZONES])
 	_check(names.size() == zones.zones.size(), "every area has its own name")
 	var kinds := zones.zones.map(func(z: Dictionary) -> String: return z["kind"])
 	_check(kinds.count("kingdom") == 3 and kinds.count("wild") == 3, "3 kingdom waters and 3 wild waters")

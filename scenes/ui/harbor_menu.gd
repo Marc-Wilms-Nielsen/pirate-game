@@ -10,6 +10,7 @@ var _root: Control
 var _title: Label
 var _purse: Label
 var _tabs: TabContainer
+var _leave_button: Button
 var _pages: Dictionary = {}
 
 
@@ -34,7 +35,8 @@ var _show_for_sale := false ## om listen med varer til salg er foldet ud
 var _upgrade_index := -1 ## hvilket af dine skibe der vises under Upgrades (-1 = det du sejler)
 
 
-func open(h: Harbor) -> void:
+func open(h: Harbor, on_foot := false) -> void:
+	_leave_button.text = "Leave the shop (Esc)" if on_foot else "Set sail (Esc)" # in a big city's shop you walk on afterwards
 	harbor = h
 	_upgrade_index = -1
 	_candidates = []
@@ -78,7 +80,8 @@ func _build() -> void:
 	titles.add_child(_title)
 	_purse = UiTheme.label("", 9, UiTheme.MUTED)
 	titles.add_child(_purse)
-	header.add_child(UiTheme.button("Set sail (Esc)", close))
+	_leave_button = UiTheme.button("Set sail (Esc)", close)
+	header.add_child(_leave_button)
 
 	_tabs = TabContainer.new()
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL

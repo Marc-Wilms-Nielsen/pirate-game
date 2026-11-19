@@ -99,6 +99,7 @@ func _ready() -> void:
 	_home_menu.closed.connect(_on_harbor_closed)
 	Game.pirate_boarding.connect(_on_pirate_boarding)
 	Game.duel_requested.connect(_on_duel_requested)
+	Game.shop_requested.connect(_on_shop_requested)
 	Game.changed.connect(func() -> void:
 		if not _escort_sync_pending:
 			_escort_sync_pending = true
@@ -190,6 +191,18 @@ func _generate_world() -> void:
 			_place(placed, candidate)
 			home_index = placed.size() - 1
 			break
+	# The canal city: a big island a short sail from Sunhaven (with its own random numbers,
+	# so the islands placed before it stay where they were)
+	var city_index := -1
+	var city_rng := RandomNumberGenerator.new()
+	city_rng.seed = world_seed + 4242
+	for attempt in 400:
+		var pos := Vector2.from_angle(city_rng.randf() * TAU) * city_rng.randf_range(4600.0, 7500.0)
+		var candidate := {"pos": pos, "radius": BigCity.ISLAND_RADIUS, "lagoon": 1.45, "detail": 0.0, "city": true}
+		if _fits(candidate):
+			_place(placed, candidate)
+			city_index = placed.size() - 1
+			break
 	var tries := 0
 	while placed.size() < island_count and tries < island_count * 120:
 		tries += 1
@@ -205,7 +218,7 @@ func _generate_world() -> void:
 	# Landsbyer og piratlejre på nogle af de øvrige øer
 	var free_islands: Array[int] = []
 	for i in placed.size():
-		if i != home_index and not harbor_factions.has(i) and not kingdom_lands.has(i):
+		if i != home_index and i != city_index and not harbor_factions.has(i) and not kingdom_lands.has(i):
 			free_islands.append(i)
 	var shuffled := free_islands.duplicate()
 	var shuffle_rng := RandomNumberGenerator.new()
@@ -245,6 +258,17 @@ func _generate_world() -> void:
 			island.harbor_kind = "home"
 			island.island_name = "Home Island"
 			island.harbor_angle = (-placed[i]["pos"]).angle() # molen vender mod starthavnen
+		elif i == city_index:
+			# Lanternmouth: a straight waterfront facing Sunhaven, on the roundest island shape
+			island.seed_value = BigCity.roundest_seed((-(placed[i]["pos"] as Vector2)).angle())
+			island.front_angle = (-placed[i]["pos"]).angle()
+			island.front_dist = BigCity.FRONT_DIST
+			island.palm_count = 0
+			island.harbor_name = Catalog.CITY["name"]
+			island.harbor_kind = "trade"
+			island.harbor_city = Catalog.CITY["name"]
+			island.harbor_angle = island.front_angle
+			island.island_name = Catalog.CITY["name"]
 		elif kingdom_lands.has(i):
 			island.island_name = (Catalog.KINGDOMS[kingdom_lands.find(i)]["name"] as String).replace("Kingdom of ", "")
 		elif villages.has(i):
@@ -265,6 +289,8 @@ func _generate_world() -> void:
 			_populate_island(island, true)
 			_add_home_rim(island, rng)
 			_streamer.add_wide(island, island.radius * 1.5 * island.lagoon_size)
+		elif i == city_index:
+			_streamer.add_wide(island, island.radius * 1.5 * island.lagoon_size) # the city fills it (below)
 		else:
 			# Landsbyer og lejre findes fra start (de står på kortet), resten af øens indhold
 			# (træer, kister, dyr) bygges først når man kommer i nærheden
@@ -278,8 +304,18 @@ func _generate_world() -> void:
 	# Harbors on the big mainlands sat inland (their pier on dry land): move them out to the coast
 	for node in _world.get_children():
 		var isl := node as Island
-		if isl and isl.harbor:
+		if isl and isl.harbor and isl.harbor_city == "":
 			_harbor_to_shore(isl.harbor)
+	# The canal city round its harbor (it places the harbor on its waterfront itself)
+	for node in _world.get_children():
+		var isl := node as Island
+		if isl and isl.harbor_city != "":
+			var city := BigCity.new()
+			city.name = "City_" + isl.harbor_city
+			city.island = isl
+			city.harbor = isl.harbor
+			_world.add_child(city)
+			_streamer.add_wide(city, BigCity.RADIUS)
 	# Havbunden bygges også bid for bid
 	_streamer.add_cell_builder(func(cell: Vector2i, rect: Rect2) -> void:
 		if _seabed:
@@ -305,7 +341,7 @@ func _assign_harbors(placed: Array[Dictionary], home_index: int, kingdom_lands: 
 		var best := -1
 		var best_dist := -1.0
 		for i in placed.size():
-			if i in chosen or i == home_index:
+			if i in chosen or i == home_index or placed[i].get("city", false):
 				continue
 			var nearest := INF
 			for h in chosen:
@@ -619,12 +655,44 @@ func _on_dock_requested(harbor: Harbor) -> void:
 		if result == "decline":
 			break
 		talk = Quests.talk_at(harbor.harbor_name)
+	# The big city: the harbourmaster welcomes you – harbor business, or a stroll ashore
+	if harbor.city != "":
+		_quest_dialog.open({"mode": "choice", "person": Catalog.CITY["person"], "title": harbor.harbor_name,
+			"lines": Catalog.CITY["welcome"], "choices": [["Stroll ashore", "stroll"], ["Harbor business", "business"]]})
+		if await _quest_dialog.closed == "stroll":
+			_stroll_ashore(harbor)
+			return
 	_harbor_menu.call("open", harbor)
+
+
+## "Stroll ashore": the ship stays at its berth and you step onto the pier, facing the town
+## (walk back to the ship and press F to sail on).
+func _stroll_ashore(harbor: Harbor) -> void:
+	get_tree().paused = false
+	_pause.set("harbor_menu_open", false)
+	_on_disembark_requested()
+	if _player:
+		var spot := harbor.to_global(Vector2(Harbor.PIER_LENGTH * 0.6, 0)) # on the pier
+		_player.global_position = spot
+		_player.set("_prev_pos", spot) # no smoothing from where he first stepped off
+		_player.set("_curr_pos", spot)
+		_player.set("_facing", Vector2.from_angle(harbor.global_rotation + PI))
+	Game.notify("You step ashore in %s. Walk back to your ship and press F to sail on." % harbor.harbor_name, UiTheme.ACCENT)
+
+
+## On foot in the city: the shop's door opens the harbor menu (you stay ashore afterwards).
+func _on_shop_requested(harbor: Node2D) -> void:
+	if get_tree().paused or not is_instance_valid(harbor):
+		return
+	_pause.set("harbor_menu_open", true)
+	Game.visited_harbors[(harbor as Harbor).harbor_name] = true
+	_harbor_menu.call("open", harbor, true)
 
 
 func _on_harbor_closed() -> void:
 	_pause.set("harbor_menu_open", false)
-	_ship.set_controlled(true)
+	if _player == null: # after a shop visit on foot, you keep walking
+		_ship.set_controlled(true)
 
 
 func _on_pirate_boarding(enemy: Node2D) -> void:

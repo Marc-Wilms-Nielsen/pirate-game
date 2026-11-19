@@ -50,7 +50,7 @@ func build() -> void:
 	zones.append({"name": Catalog.ZONE_HOME["name"], "subtitle": Catalog.ZONE_HOME["subtitle"], "kind": "home",
 		"center": Vector2.ZERO, "weight": HOME_WEIGHT, "color": Catalog.ZONE_HOME["color"]})
 	# The mainlands: kingdoms by their castle, the wild ones in order round the world
-	var mainlands: Array = get_tree().get_nodes_in_group("islands").filter(func(n: Node) -> bool: return (n as Island).radius > 1000.0)
+	var mainlands: Array = get_tree().get_nodes_in_group("islands").filter(func(n: Node) -> bool: return (n as Island).is_mainland())
 	mainlands.sort_custom(func(a: Island, b: Island) -> bool: return a.global_position.angle() < b.global_position.angle())
 	var wild := 0
 	for node in mainlands:
@@ -83,6 +83,11 @@ func build() -> void:
 				best = c
 		zones.append({"name": Catalog.ZONE_SEA_NAMES[k % Catalog.ZONE_SEA_NAMES.size()], "subtitle": "Open sea", "kind": "sea",
 			"center": best, "weight": 0.0, "color": Catalog.ZONE_SEA_COLORS[k % Catalog.ZONE_SEA_COLORS.size()]})
+	# The big city's waters (added last, so the other areas stay where they were)
+	for node in get_tree().get_nodes_in_group("big_cities"):
+		var city := node as BigCity
+		zones.append({"name": Catalog.CITY["zone"], "subtitle": Catalog.CITY["name"], "kind": "city",
+			"center": city.island.global_position, "weight": city.island.radius * 1.3, "color": Catalog.CITY["zone_color"]})
 	# Each area's shape: the world's square cut by the border line to every other area
 	var b := radius * 1.15
 	bounds = b

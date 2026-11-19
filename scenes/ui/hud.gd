@@ -81,7 +81,12 @@ func _process(_delta: float) -> void:
 		var node := player.nearby_resource()
 		var shoal := player.nearby_shoal()
 		var castle := player.nearby_castle()
-		if castle:
+		var saloon := player.nearby_saloon()
+		if player.nearby_shop():
+			_prompt.text = "F: Step into the %s" % Catalog.CITY["shop"]
+		elif saloon != "":
+			_prompt.text = "%s – singing and a squeezebox from inside" % saloon
+		elif castle:
 			var wait := Game.kingdom_wait(castle.kingdom_index)
 			if wait > 0.0:
 				_prompt.text = "%s is gathering new troops (%d min)" % [castle.kingdom()["name"], ceili(wait / 60.0)]

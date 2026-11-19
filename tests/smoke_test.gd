@@ -97,7 +97,7 @@ func _deep_spot() -> Vector2:
 func _run() -> void:
 	var ship := get_tree().get_first_node_in_group("player_ship") as PlayerShip
 	_check(get_tree().get_nodes_in_group("islands").size() >= 10, "mindst 10 øer")
-	_check(get_tree().get_nodes_in_group("harbors").filter(func(h): return h.kind != "home").size() == 39, "39 havne fordelt på 5 fraktioner + hjemø")
+	_check(get_tree().get_nodes_in_group("harbors").filter(func(h): return h.kind != "home").size() == 40, "40 havne: 39 fordelt på 5 fraktioner + kanalbyen Lanternmouth (+ hjemø)")
 	_check(get_tree().get_nodes_in_group("harbors").all(func(h): return not Game.is_land((h as Harbor).dock_position())), "alle havne kan nås fra havet (også Port Aurel og Valmar på fastlandene)")
 	_check(get_tree().get_nodes_in_group("islands").size() >= 250 and get_tree().get_nodes_in_group("villages").size() >= 30, "10x verden: 250+ øer og 30+ fiskerlandsbyer")
 	_check(get_tree().get_nodes_in_group("resources").size() > 10, "træer, klipper og urter på øerne")
@@ -781,7 +781,7 @@ func _test_fleet(ship: PlayerShip) -> void:
 ## Kongeriger, store dyr, opgraderinger, fredeligt vand, døgn og vejr.
 func _test_new_world(ship: PlayerShip) -> void:
 	_check(get_tree().get_nodes_in_group("islands").size() >= 25, "mindst 25 øer")
-	var huge := get_tree().get_nodes_in_group("islands").filter(func(i): return (i as Island).radius > 1000.0)
+	var huge := get_tree().get_nodes_in_group("islands").filter(func(i): return (i as Island).is_mainland())
 	_check(huge.size() == 6, "6 kæmpe fastlande (fandt %d)" % huge.size())
 	var castles := get_tree().get_nodes_in_group("castles")
 	_check(castles.size() == 3, "3 slotte med kongeriger")

@@ -252,7 +252,7 @@ func _resolve_harbor(sel: Variant) -> String:
 	var best_score := INF
 	for node in get_tree().get_nodes_in_group("harbors"):
 		var h := node as Harbor
-		if h.kind == "home" or Game.faction_of(h.harbor_name) != d["faction"] or h.harbor_name in used:
+		if h.kind == "home" or h.city != "" or Game.faction_of(h.harbor_name) != d["faction"] or h.harbor_name in used:
 			continue
 		var score := absf(h.global_position.distance_to(from) - float(d["dist"]))
 		if score < best_score:
@@ -280,7 +280,7 @@ func _resolve_target(id: String, sel: Dictionary) -> void:
 		spots[id + ".target"] = best
 	elif sel.has("wild_mainland"):
 		var from := _ref_pos(sel["wild_mainland"])
-		var island := _nearest_island(from, func(i: Island) -> bool: return i.radius > 1000.0 and not _has_castle(i))
+		var island := _nearest_island(from, func(i: Island) -> bool: return i.is_mainland() and not _has_castle(i))
 		if island:
 			var angle := (from - island.global_position).angle()
 			spots[id + ".island"] = island.global_position

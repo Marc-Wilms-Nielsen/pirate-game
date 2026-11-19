@@ -47,16 +47,20 @@ func _process(delta: float) -> void:
 	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var data_a := PackedVector4Array()
 	var data_b := PackedVector4Array()
+	var data_c := PackedVector4Array()
 	for entry in near:
 		if data_a.size() >= MAX_ISLANDS:
 			break
 		var data: Array = (entry[1] as Island).get_shape_data()
 		data_a.append(data[0])
 		data_b.append(data[1])
+		data_c.append(data[2])
 	var count := data_a.size()
 	while data_a.size() < MAX_ISLANDS:
 		data_a.append(Vector4.ZERO)
 		data_b.append(Vector4.ZERO)
+		data_c.append(Vector4.ZERO)
 	mat.set_shader_parameter("island_a", data_a)
 	mat.set_shader_parameter("island_b", data_b)
+	mat.set_shader_parameter("island_c", data_c)
 	mat.set_shader_parameter("island_count", count)

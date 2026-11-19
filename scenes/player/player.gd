@@ -45,6 +45,7 @@ var _splash: AudioStreamPlayer
 
 func _ready() -> void:
 	add_to_group("player_character")
+	collision_mask = BigCity.BUILDING_LAYER # the houses and canals of a big city are solid
 	WorldSky.add_lantern(self, Vector2.ZERO, 70.0, Color(1.0, 0.85, 0.6), 0.7)
 	($Camera2D as ZoomCamera).base_zoom = 2.0
 	# On foot the view stays close and personal: you can zoom out much less than at sea
@@ -98,7 +99,10 @@ func _physics_process(delta: float) -> void:
 		var shoal := nearby_shoal()
 		var node := nearby_resource()
 		var castle := nearby_castle()
-		if castle:
+		var shop := nearby_shop()
+		if shop:
+			Game.shop_requested.emit(shop)
+		elif castle:
 			Game.duel_requested.emit(castle)
 		elif chest:
 			chest.open()
@@ -250,6 +254,24 @@ func nearby_castle() -> Castle:
 	return null
 
 
+## The harbor of the big-city shop whose door you stand at (F opens its market), or null.
+func nearby_shop() -> Harbor:
+	for c in get_tree().get_nodes_in_group("big_cities"):
+		var h := (c as BigCity).shop_at(global_position)
+		if h:
+			return h
+	return null
+
+
+## The name of the big-city saloon whose door you stand at, or "".
+func nearby_saloon() -> String:
+	for c in get_tree().get_nodes_in_group("big_cities"):
+		var s := (c as BigCity).saloon_at(global_position)
+		if s != "":
+			return s
+	return ""
+
+
 func nearby_chest() -> Chest:
 	for c in get_tree().get_nodes_in_group("chests"):
 		if (c as Chest).can_open(global_position):
@@ -292,7 +314,7 @@ func can_board() -> bool:
 
 
 func _check_land() -> bool:
-	return Game.is_land(global_position)
+	return Game.is_walkable(global_position) # land, or a big city's quays, piers and moles
 
 
 func _process(delta: float) -> void:

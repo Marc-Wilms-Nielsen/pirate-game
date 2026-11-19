@@ -16,6 +16,7 @@ const float TILE = 1.0 / 16.0; // both noise textures hold 16 x 16 noise cells p
 
 uniform vec4 island_a[32]; // x, y, radius, lagoon size
 uniform vec4 island_b[32]; // shape phases p1, p2, p3, coast detail
+uniform vec4 island_c[32]; // a city's straight waterfront: direction x, y, distance (0 = none)
 uniform int island_count = 0;
 uniform int quality = 2; // 0 = low, 1 = medium, 2 = high (from Settings)
 uniform float night = 0.0; // 0 = day, 1 = night: glowing plankton in the water (set by Sky)
@@ -121,6 +122,10 @@ float water_depth(vec2 wp) {
 		r += b.w * (0.08 * sin(4.0 * ang + ph.x * 1.7 + ph.y) + 0.05 * sin(7.0 * ang + ph.z * 2.3 + ph.x) + 0.03 * sin(11.0 * ang + ph.y * 3.1));
 		r *= a.z;
 		float t = clamp((dist / r - 1.0) / (a.w - 1.0), 0.0, 1.0);
+		vec4 c = island_c[i];
+		if (c.z > 0.0) { // a city's straight quay (c.z out from the middle): deep water within c.w px (same as island.gd)
+			t = max(t, clamp((dot(d, c.xy) - c.z) / c.w, 0.0, 1.0));
+		}
 		t = t * t * t * (t * (t * 6.0 - 15.0) + 10.0); // soft at both ends
 		depth = min(depth, t);
 	}
