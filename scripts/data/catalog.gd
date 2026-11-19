@@ -568,6 +568,19 @@ const QUEST_PEOPLE := {
 		"hair_style": "long", "hat": "none", "beard": "none", "glasses": true, "coat": Color(0.2, 0.35, 0.6)}},
 	"celestine": {"name": "Lady Celestine", "title": "Envoy of Aurelia", "look": {"skin": Color(0.98, 0.85, 0.75), "hair": Color(0.95, 0.8, 0.45),
 		"hair_style": "long", "hat": "feather", "hat_color": Color(0.75, 0.15, 0.2), "beard": "none", "earring": true, "coat": Color(0.7, 0.15, 0.2)}},
+	# The harbor masters who welcome you to the big cities (see BIG_CITY_WELCOME)
+	"benedetto": {"name": "Benedetto", "title": "Harbourmaster of Port Aurel", "look": {"skin": Color(0.9, 0.72, 0.58), "hair": Color(0.25, 0.18, 0.12),
+		"hair_style": "short", "hat": "tricorn", "hat_color": Color(0.7, 0.15, 0.18), "beard": "mustache", "coat": Color(0.75, 0.18, 0.2), "coat_accent": Color(0.95, 0.8, 0.3)}},
+	"mags": {"name": "One-Eyed Mags", "title": "Keeps the docks of Gallows Bay", "look": {"skin": Color(0.72, 0.55, 0.42), "hair": Color(0.55, 0.15, 0.1),
+		"hair_style": "braids", "hat": "bandana", "hat_color": Color(0.15, 0.15, 0.15), "beard": "none", "eyepatch": true, "earring": true, "coat": Color(0.22, 0.2, 0.2)}},
+}
+
+## The welcome when you dock at a big city: who greets you and what they say.
+const BIG_CITY_WELCOME := {
+	"royal": {"person": "benedetto", "lines": ["Welcome to Port Aurel, captain – the jewel of the Kingdom of Aurelia!",
+		"Your berth is ready. Will you see to business at the harbor office, or stretch your legs in the town?"]},
+	"pirate": {"person": "mags", "lines": ["Gallows Bay. Keep a hand on your purse and the other near your blade.",
+		"So – business at the harbor office, or a walk through the alleys?"]},
 }
 
 ## The quest line, in order. Fields:

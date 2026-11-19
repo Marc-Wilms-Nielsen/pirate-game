@@ -14,13 +14,16 @@ extends Node2D
 ## - The pirate city is tarred timber with black flags, and it is gloomy: WorldSky darkens the
 ##   light and adds fog near it (gloom()), with braziers and lanterns burning in the streets.
 
-const RADIUS := 1300.0 ## streaming radius: the city wakes up when you come this close
-const LAND_DEPTH := 560.0 ## how far the town reaches inland
-const HALF_WIDTH := 400.0
-const MOLE_W := 24.0
+const RADIUS := 2800.0 ## streaming radius: the city wakes up when you come this close
+const S := 2.2 ## the city's scale: streets wide enough to stroll, houses and square to match
+const LAND_DEPTH := 560.0 * S ## how far the town reaches inland
+const HALF_WIDTH := 400.0 * S
+const MOLE_W := 24.0 * 1.6
 const BUILDING_LAYER := 8 ## physics layer 4: the captain bumps into houses (PlayerCharacter)
-const GLOOM_INNER := 650.0
-const GLOOM_OUTER := 1150.0
+const GLOOM_INNER := 650.0 * S
+const GLOOM_OUTER := 1150.0 * S
+const LIGHTHOUSE := Vector2(430, -180) * S
+const BATTERY := Vector2(430, 180) * S
 
 var harbor: Harbor
 var kind := "royal" ## "royal" or "pirate"
@@ -29,7 +32,7 @@ var walk_polys: Array[PackedVector2Array] = [] ## local: quay, piers and moles y
 var _moles: Array[PackedVector2Array] = []
 var _piers: Array[Rect2] = []
 var _streets: Array[Rect2] = []
-var _square := Rect2(-330, -95, 150, 190)
+var _square := Rect2(Vector2(-330, -95) * S, Vector2(150, 190) * S)
 var _house_cols: Array[Color] = []
 var _stalls: Array = [] ## [pos, colour]
 var _gardens: Array[Rect2] = []
@@ -65,13 +68,14 @@ func _exit_tree() -> void:
 
 func _build_harbor() -> void:
 	# The quay along the waterfront, and the piers (the central one is where you dock)
-	walk_polys.append(_rect_poly(Rect2(-34, -HALF_WIDTH + 40, 46, HALF_WIDTH * 2 - 80)))
-	_piers = [Rect2(0, -14, Harbor.PIER_LENGTH + 30, 28), Rect2(0, -190, 120, 18), Rect2(0, 172, 120, 18)]
+	walk_polys.append(_rect_poly(_quay()))
+	# The central pier keeps its length: the harbor's berth is at its end
+	_piers = [Rect2(0, -22, Harbor.PIER_LENGTH + 30, 44), Rect2(0, -190 * S, 120 * S, 40), Rect2(0, 172 * S, 120 * S, 40)]
 	for p in _piers:
 		walk_polys.append(_rect_poly(p))
 	# Two breakwaters: out from the shore, then bending in to close the basin
 	for side in [-1.0, 1.0]:
-		var pts := [Vector2(-20, side * 330), Vector2(300, side * 330), Vector2(430, side * 180)]
+		var pts := [Vector2(-20, side * 330) * S, Vector2(300, side * 330) * S, Vector2(430, side * 180) * S]
 		var mole := _thick_path(pts, MOLE_W)
 		_moles.append(mole)
 		walk_polys.append(mole)
@@ -79,44 +83,61 @@ func _build_harbor() -> void:
 
 func _build_town() -> void:
 	# Streets: the avenue up from the quay, two cross streets and lanes along the quay
-	_streets = [Rect2(-LAND_DEPTH, -17, LAND_DEPTH, 34), Rect2(-150, -HALF_WIDTH, 26, HALF_WIDTH * 2),
-		Rect2(-430, -HALF_WIDTH, 26, HALF_WIDTH * 2), Rect2(-LAND_DEPTH, -230, LAND_DEPTH - 34, 22),
-		Rect2(-LAND_DEPTH, 208, LAND_DEPTH - 34, 22), _square]
+	_streets = [Rect2(-LAND_DEPTH, -38, LAND_DEPTH, 76), Rect2(-150 * S, -HALF_WIDTH, 60, HALF_WIDTH * 2),
+		Rect2(-430 * S, -HALF_WIDTH, 60, HALF_WIDTH * 2), Rect2(-LAND_DEPTH, -230 * S, LAND_DEPTH - 34 * S, 50),
+		Rect2(-LAND_DEPTH, 208 * S, LAND_DEPTH - 34 * S, 50), _square]
 	var cols: Array[Color] = [Color(0.72, 0.32, 0.2), Color(0.62, 0.28, 0.18), Color(0.68, 0.42, 0.24), Color(0.5, 0.36, 0.28), Color(0.45, 0.46, 0.55)]
 	if kind == "pirate":
 		cols = [Color(0.24, 0.2, 0.18), Color(0.32, 0.24, 0.18), Color(0.2, 0.22, 0.24), Color(0.36, 0.28, 0.2)]
 	# Warehouses along the quay, then houses in rows filling the blocks between the streets
-	for y0 in range(int(-HALF_WIDTH + 50), int(HALF_WIDTH - 50), 70):
-		_try_house(Rect2(-100, y0, 52, 56), cols)
-	var x := -LAND_DEPTH + 10.0
-	while x < -110.0:
-		var y := -HALF_WIDTH
-		var w := _rng.randf_range(26, 38)
-		while y < HALF_WIDTH:
-			var h := _rng.randf_range(20, 32)
-			_try_house(Rect2(x, y, w, h), cols)
-			y += h + _rng.randf_range(6, 12)
-		x += w + _rng.randf_range(8, 14)
+	# Houses block by block, their fronts on the street, so the streets are lined with houses
+	# (the last band, between the last cross street and the quay, is the harborside: warehouses)
+	var xs := [-LAND_DEPTH, -430 * S, -430 * S + 60, -150 * S, -150 * S + 60, _quay().position.x - 12.0]
+	var ys := [-HALF_WIDTH, -230 * S, -230 * S + 50, -38.0, 38.0, 208 * S, 208 * S + 50, HALF_WIDTH]
+	for bx in range(0, xs.size() - 1, 2):
+		for by in range(0, ys.size() - 1, 2):
+			_fill_block(Rect2(xs[bx], ys[by], xs[bx + 1] - xs[bx], ys[by + 1] - ys[by]), cols)
 	# The square: a fountain (or a fire pit) and market stalls round it
 	var stall_cols := [Color(0.85, 0.25, 0.2), Color(0.25, 0.45, 0.8), Color(0.9, 0.75, 0.3), Color(0.3, 0.6, 0.35)]
 	if kind == "pirate":
 		stall_cols = [Color(0.45, 0.15, 0.15), Color(0.25, 0.25, 0.3), Color(0.4, 0.3, 0.15)]
 	for i in 10:
 		var a := TAU * i / 10.0
-		_stalls.append([_square.get_center() + Vector2(cos(a) * 62, sin(a) * 78), stall_cols[i % stall_cols.size()]])
+		_stalls.append([_square.get_center() + Vector2(cos(a) * 62, sin(a) * 78) * S, stall_cols[i % stall_cols.size()]])
 	# Street lamps (braziers in the pirate city), the places people walk between
 	for px in [-60.0, -200.0, -310.0, -480.0]:
-		for py in [-30.0, 30.0]:
-			_lamps.append(Vector2(px, py))
+		for py in [-34.0, 34.0]:
+			_lamps.append(Vector2(px * S, py * 1.25))
 	for p in [Vector2(-140, -240), Vector2(-140, 240), Vector2(-420, -240), Vector2(-420, 240), Vector2(-10, -250), Vector2(-10, 250)]:
-		_lamps.append(p)
+		_lamps.append(p * S)
+	for c in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]: # the square's corners
+		_lamps.append(_square.get_center() + c * _square.size * 0.45)
 	for s in _streets:
 		for k in 3:
 			var p := s.position + Vector2(s.size.x * (k + 0.5) / 3.0, s.size.y * 0.5)
 			if Game.is_land(to_global(p)):
 				_waypoints.append(p)
-	for p in [Vector2(60, 0), Vector2(110, 0), Vector2(40, -180), Vector2(40, 180), Vector2(-10, -120), Vector2(-10, 120)]:
+	for p in [Vector2(60, 0), Vector2(110, 0), Vector2(90, -400), Vector2(90, 400), Vector2(-20, -260), Vector2(-20, 260)]:
 		_waypoints.append(p)
+
+
+## Fills a block between streets with rows of houses: one row along each street side of the
+## block (facing it), and more rows in between if the block is deep.
+func _fill_block(b: Rect2, cols: Array[Color]) -> void:
+	var y := b.position.y + 8.0
+	while y < b.end.y - 40.0:
+		var depth := _rng.randf_range(46, 66)
+		if y + depth > b.end.y - 8.0:
+			depth = b.end.y - 8.0 - y # the last row sits flush with the street below
+		if depth < 34.0:
+			break
+		var x := b.position.x + 8.0
+		while x < b.end.x - 30.0:
+			var w := minf(_rng.randf_range(54, 82), b.end.x - 8.0 - x)
+			if w >= 30.0:
+				_try_house(Rect2(x, y, w, depth), cols)
+			x += w + _rng.randf_range(6, 12)
+		y += depth + _rng.randf_range(10, 16)
 
 
 ## Adds a house if it is on land and clear of the streets and other houses.
@@ -128,7 +149,10 @@ func _try_house(r: Rect2, cols: Array[Color]) -> void:
 		if s.grow(4.0).intersects(r):
 			return
 	for h in houses:
-		if h.grow(4.0).intersects(r):
+		if h.grow(6.0).intersects(r):
+			return
+	for c in get_tree().get_nodes_in_group("castles"): # a kingdom's own town keeps its ground
+		if (c as Node2D).global_position.distance_to(to_global(r.get_center())) < 520.0:
 			return
 	houses.append(r)
 	_house_cols.append(cols[_rng.randi() % cols.size()])
@@ -183,10 +207,13 @@ func _build_life() -> void:
 	var lamp_col := Color(1.0, 0.55, 0.25) if kind == "pirate" else Color(1.0, 0.8, 0.5)
 	for p in _lamps:
 		WorldSky.add_lantern(self, p, 90.0 if kind == "pirate" else 70.0, lamp_col, 1.1 if kind == "pirate" else 0.7)
-	WorldSky.add_lantern(self, Vector2(430, -180), 220.0, Color(1.0, 0.92, 0.7), 1.2) # the lighthouse
-	# Ships moored at the quays and piers
-	var spots := [[Vector2(60, -168), 0.0], [Vector2(60, 194), 0.0], [Vector2(70, -214), 0.0], [Vector2(70, 150), 0.0],
-		[Vector2(200, -260), 0.4], [Vector2(230, 250), -0.3], [Vector2(40, -330 + 50), PI * 0.5], [Vector2(300, 60), 1.4]]
+	WorldSky.add_lantern(self, LIGHTHOUSE, 320.0, Color(1.0, 0.92, 0.7), 1.3) # the lighthouse
+	# Ships moored along the piers and the quay, and a few at anchor in the basin
+	var spots := [[Vector2(70, -168), 0.0], [Vector2(140, -168), 0.0], [Vector2(70, 194), 0.0], [Vector2(140, 194), 0.0],
+		[Vector2(70, -214), 0.0], [Vector2(140, -214), 0.0], [Vector2(70, 150), 0.0], [Vector2(140, 150), 0.0],
+		[Vector2(30, -290), PI * 0.5], [Vector2(30, 280), PI * 0.5], [Vector2(230, -260), 0.4], [Vector2(250, 250), -0.3], [Vector2(320, 80), 1.4]]
+	for s in spots:
+		s[0] = (s[0] as Vector2) * S
 	var types := ["sloop", "schooner", "fluyt", "caravel", "brig", "galleon"] if kind == "royal" else ["sloop", "cutter", "brig", "brigantine", "longship"]
 	for s in spots:
 		var v := ShipVisual.new()
@@ -199,14 +226,14 @@ func _build_life() -> void:
 	for i in 2:
 		var hs := HarborShip.new()
 		hs.city = self
-		hs.path = [Vector2(150, 90 - i * 180), Vector2(380, 0 - i * 40), Vector2(700, -160 + i * 320), Vector2(1100, -40 + i * 80),
-			Vector2(700, 200 - i * 400), Vector2(380, 40 - i * 80)]
+		hs.path = [Vector2(150, 90 - i * 180) * S, Vector2(380, 0 - i * 40) * S, Vector2(700, -160 + i * 320) * S, Vector2(1100, -40 + i * 80) * S,
+			Vector2(700, 200 - i * 400) * S, Vector2(380, 40 - i * 80) * S]
 		hs.at = i * 3
 		add_child(hs)
 		hs.setup(_ship_config(types[(i + 2) % types.size()]))
 		_traffic.append(hs)
-	for i in 4:
-		_boats.append([Vector2(_rng.randf_range(60, 350), _rng.randf_range(-250, 250)), Vector2.ZERO, 0.0])
+	for i in 7:
+		_boats.append([Vector2(_rng.randf_range(60, 350), _rng.randf_range(-250, 250)) * S, Vector2.ZERO, 0.0])
 	_anim = CityAnim.new()
 	_anim.city = self
 	add_child(_anim)
@@ -239,7 +266,7 @@ func _process(delta: float) -> void:
 	for b in _boats:
 		var to: Vector2 = (b[1] as Vector2) - (b[0] as Vector2)
 		if to.length() < 4.0 or b[1] == Vector2.ZERO:
-			b[1] = Vector2(_rng.randf_range(60, 380), _rng.randf_range(-280, 280))
+			b[1] = Vector2(_rng.randf_range(60, 380), _rng.randf_range(-280, 280)) * S
 		else:
 			b[2] = lerp_angle(float(b[2]), to.angle(), 1.0 - exp(-2.0 * delta))
 			b[0] = (b[0] as Vector2) + Vector2.from_angle(float(b[2])) * 14.0 * delta
@@ -251,7 +278,7 @@ func _process(delta: float) -> void:
 func gloom(focus: Vector2) -> float:
 	if kind != "pirate" or not is_inside_tree():
 		return 0.0
-	var d := focus.distance_to(to_global(Vector2(-200, 0)))
+	var d := focus.distance_to(to_global(Vector2(-200, 0) * S))
 	return 1.0 - smoothstep(GLOOM_INNER, GLOOM_OUTER, d)
 
 
@@ -265,7 +292,7 @@ func _draw() -> void:
 	# Streets and the square (cobbles)
 	for s in _streets:
 		draw_rect(s, paving)
-	for i in 260:
+	for i in 360:
 		var s: Rect2 = _streets[i % _streets.size()]
 		var p := s.position + Vector2(fmod(i * 37.3, s.size.x), fmod(i * 19.7, s.size.y))
 		draw_rect(Rect2(p, Vector2(2.2, 1.6)), paving.darkened(0.12)) # a cobble
@@ -275,27 +302,27 @@ func _draw() -> void:
 		draw_colored_polygon(_offset(m, Vector2(3, 4)), Color(0, 0, 0, 0.22))
 		draw_colored_polygon(m, stone)
 		draw_polyline(m + PackedVector2Array([m[0]]), stone_dark, 1.2, true)
-	draw_rect(Rect2(-34, -HALF_WIDTH + 40, 46, HALF_WIDTH * 2 - 80), stone)
-	draw_line(Vector2(12, -HALF_WIDTH + 40), Vector2(12, HALF_WIDTH - 40), stone_dark, 2.0) # quay edge
+	draw_rect(_quay(), stone)
+	draw_line(Vector2(_quay().end.x, _quay().position.y), _quay().end, stone_dark, 3.0) # quay edge
 	for p in _piers:
 		draw_rect(Rect2(p.position + Vector2(3, 4), p.size), Color(0, 0, 0, 0.2))
 		draw_rect(p, stone.lightened(0.05))
 		for k in range(int(p.position.x) + 8, int(p.end.x), 12):
 			draw_line(Vector2(k, p.position.y), Vector2(k, p.end.y), stone_dark, 0.6)
 	# Bollards along the quay
-	for y in range(int(-HALF_WIDTH + 60), int(HALF_WIDTH - 60), 40):
+	for y in range(int(-HALF_WIDTH + 100), int(HALF_WIDTH - 100), 60):
 		draw_circle(Vector2(8, y), 2.0, Color(0.15, 0.13, 0.12), true, -1.0, false)
 	# Gun battery at the end of the south mole, lighthouse at the end of the north one
-	var bat := Vector2(430, 180)
-	draw_circle(bat, 22, stone.darkened(0.1), true, -1.0, false)
+	var bat := BATTERY
+	draw_circle(bat, 36, stone.darkened(0.1), true, -1.0, false)
 	for k in 4:
 		var a := -0.6 + k * 0.4
-		draw_line(bat + Vector2.from_angle(a) * 10, bat + Vector2.from_angle(a) * 26, Color(0.12, 0.12, 0.14), 3.0, true)
-	var lh := Vector2(430, -180)
-	draw_circle(lh + Vector2(3, 4), 15, Color(0, 0, 0, 0.25), true, -1.0, false)
-	draw_circle(lh, 15, Color(0.92, 0.9, 0.85) if not pirate else Color(0.45, 0.4, 0.36), true, -1.0, false)
-	draw_arc(lh, 15, 0, TAU, 24, Color(0.75, 0.2, 0.18), 3.0, true)
-	draw_circle(lh, 7, Color(1.0, 0.9, 0.55), true, -1.0, false)
+		draw_line(bat + Vector2.from_angle(a) * 16, bat + Vector2.from_angle(a) * 42, Color(0.12, 0.12, 0.14), 4.5, true)
+	var lh := LIGHTHOUSE
+	draw_circle(lh + Vector2(5, 6), 24, Color(0, 0, 0, 0.25), true, -1.0, false)
+	draw_circle(lh, 24, Color(0.92, 0.9, 0.85) if not pirate else Color(0.45, 0.4, 0.36), true, -1.0, false)
+	draw_arc(lh, 24, 0, TAU, 32, Color(0.75, 0.2, 0.18), 5.0, true)
+	draw_circle(lh, 11, Color(1.0, 0.9, 0.55), true, -1.0, false)
 	# Gardens, houses with shadows, roofs and ridges
 	for g in _gardens:
 		draw_rect(g, Color(0.42, 0.58, 0.3))
@@ -303,7 +330,6 @@ func _draw() -> void:
 		var r := houses[i]
 		var roof := _house_cols[i]
 		draw_rect(Rect2(r.position + Vector2(4, 5), r.size), Color(0, 0, 0, 0.25))
-		draw_rect(r.grow(1.0), Color(0.85, 0.8, 0.7) if not pirate else Color(0.15, 0.12, 0.1))
 		draw_rect(r, roof)
 		draw_rect(Rect2(r.position, Vector2(r.size.x, r.size.y * 0.5)), roof.lightened(0.1))
 		draw_line(Vector2(r.position.x, r.get_center().y), Vector2(r.end.x, r.get_center().y), roof.darkened(0.35), 1.2)
@@ -322,29 +348,29 @@ func _draw() -> void:
 ## once in _draw, so the city costs almost nothing per frame.
 func _draw_animated(ci: CanvasItem) -> void:
 	var pirate := kind == "pirate"
-	var lh := Vector2(430, -180)
+	var lh := LIGHTHOUSE
 	var mid := _square.get_center()
 	if Game.night > 0.2: # a slow beam sweeping over the water
 		var a := _time * 0.6
-		var beam := PackedVector2Array([lh, lh + Vector2.from_angle(a - 0.12) * 700, lh + Vector2.from_angle(a + 0.12) * 700])
+		var beam := PackedVector2Array([lh, lh + Vector2.from_angle(a - 0.12) * 1300, lh + Vector2.from_angle(a + 0.12) * 1300])
 		ci.draw_colored_polygon(beam, Color(1.0, 0.95, 0.75, 0.12 * Game.night))
 	# The square: a fountain (royal) or a fire pit with a gallows (pirate)
 	if pirate:
-		ci.draw_circle(mid, 14, Color(0.25, 0.2, 0.17), true, -1.0, false)
+		ci.draw_circle(mid, 26, Color(0.25, 0.2, 0.17), true, -1.0, false)
 		var flick := 0.8 + 0.2 * sin(_time * 11.0)
-		ci.draw_circle(mid, 9 * flick, Color(1.0, 0.45, 0.15, 0.9), true, -1.0, false)
-		ci.draw_circle(mid, 5 * flick, Color(1.0, 0.85, 0.4), true, -1.0, false)
-		var g := mid + Vector2(0, -60)
+		ci.draw_circle(mid, 16 * flick, Color(1.0, 0.45, 0.15, 0.9), true, -1.0, false)
+		ci.draw_circle(mid, 9 * flick, Color(1.0, 0.85, 0.4), true, -1.0, false)
+		var g := mid + Vector2(0, -110)
 		ci.draw_line(g, g + Vector2(0, -24), Color(0.3, 0.2, 0.12), 2.5, true)
 		ci.draw_line(g + Vector2(0, -24), g + Vector2(14, -24), Color(0.3, 0.2, 0.12), 2.5, true)
 		ci.draw_line(g + Vector2(12, -24), g + Vector2(12, -16), Color(0.5, 0.45, 0.35), 0.8, true)
 	else:
-		ci.draw_circle(mid, 22, Color(0.6, 0.58, 0.55), true, -1.0, false)
-		ci.draw_circle(mid, 17, Color(0.3, 0.55, 0.72), true, -1.0, false)
-		ci.draw_circle(mid, 5, Color(0.75, 0.72, 0.68), true, -1.0, false)
+		ci.draw_circle(mid, 40, Color(0.6, 0.58, 0.55), true, -1.0, false)
+		ci.draw_circle(mid, 32, Color(0.3, 0.55, 0.72), true, -1.0, false)
+		ci.draw_circle(mid, 9, Color(0.75, 0.72, 0.68), true, -1.0, false)
 		for k in 6: # splashes
 			var a := TAU * k / 6.0 + _time
-			ci.draw_circle(mid + Vector2.from_angle(a) * (7 + sin(_time * 3.0 + k) * 2.0), 1.4, Color(0.85, 0.95, 1.0, 0.8), true, -1.0, false)
+			ci.draw_circle(mid + Vector2.from_angle(a) * (13 + sin(_time * 3.0 + k) * 3.0), 2.2, Color(0.85, 0.95, 1.0, 0.8), true, -1.0, false)
 	# Lamps (braziers in the pirate city)
 	for p in _lamps:
 		if pirate:
@@ -355,8 +381,8 @@ func _draw_animated(ci: CanvasItem) -> void:
 			ci.draw_circle(p, 1.8, Color(0.2, 0.2, 0.22), true, -1.0, false)
 			ci.draw_circle(p, 1.1, Color(1.0, 0.9, 0.6, 0.4 + 0.6 * Game.night), true, -1.0, false)
 	# Banners on the quay: the kingdom's colours, or black flags
-	for y in [-120.0, -60.0, 60.0, 120.0]:
-		var base := Vector2(-14, y)
+	for y in [-120.0 * S, -60.0 * S, 60.0 * S, 120.0 * S]:
+		var base := Vector2(_quay().position.x + 14.0, y)
 		ci.draw_line(base, base + Vector2(0, -16), Color(0.3, 0.22, 0.14), 1.2, true)
 		var wave := sin(_time * 3.0 + y) * 1.5
 		var flag_col := Color(0.08, 0.08, 0.08) if pirate else Color(0.85, 0.2, 0.22)
@@ -377,6 +403,11 @@ func _draw_animated(ci: CanvasItem) -> void:
 
 
 # --- Small helpers -------------------------------------------------------------
+
+## The stone quay along the waterfront (x = 0 is the water's edge).
+static func _quay() -> Rect2:
+	return Rect2(-75, -HALF_WIDTH + 88, 87, HALF_WIDTH * 2 - 176)
+
 
 static func _rect_poly(r: Rect2) -> PackedVector2Array:
 	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
@@ -425,7 +456,7 @@ class CityLife extends Node2D:
 		var cloth := [Color(0.75, 0.3, 0.25), Color(0.3, 0.45, 0.7), Color(0.85, 0.75, 0.4), Color(0.4, 0.6, 0.35), Color(0.6, 0.4, 0.6), Color(0.9, 0.9, 0.85)]
 		if city.kind == "pirate":
 			cloth = [Color(0.25, 0.22, 0.2), Color(0.45, 0.15, 0.15), Color(0.3, 0.3, 0.35), Color(0.5, 0.4, 0.25)]
-		for i in 26:
+		for i in 44:
 			var start: Vector2 = city._waypoints.pick_random()
 			_people.append([start, city._waypoints.pick_random(), cloth[i % cloth.size()], randf_range(9.0, 16.0), i < 6])
 

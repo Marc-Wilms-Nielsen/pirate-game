@@ -629,6 +629,21 @@ func _remove_player() -> void:
 		_player = null
 
 
+## "Explore the town": the ship stays at its berth and you step onto the pier, ready to walk
+## up into the city (walk back to the ship and press F to sail again).
+func _stroll_ashore(harbor: Harbor) -> void:
+	get_tree().paused = false
+	_pause.set("harbor_menu_open", false)
+	_on_disembark_requested()
+	if _player:
+		var spot := harbor.to_global(Vector2(40, 0)) # on the central pier, facing the town
+		_player.global_position = spot
+		_player.set("_prev_pos", spot) # no smoothing from where he first stepped off
+		_player.set("_curr_pos", spot)
+		_player.set("_facing", Vector2.from_angle(harbor.global_rotation + PI))
+	Game.notify("You step ashore in %s. Walk back to your ship and press F to sail on." % harbor.harbor_name, UiTheme.ACCENT)
+
+
 func _on_dock_requested(harbor: Harbor) -> void:
 	_ship.place_at(harbor.dock_position(), harbor.dock_rotation())
 	_ship.set_controlled(false)
@@ -649,6 +664,14 @@ func _on_dock_requested(harbor: Harbor) -> void:
 		if result == "decline":
 			break
 		talk = Quests.talk_at(harbor.harbor_name)
+	# A big city: the harbor master welcomes you – business as usual, or a stroll ashore
+	if harbor.city != "":
+		var w: Dictionary = Catalog.BIG_CITY_WELCOME[harbor.city]
+		_quest_dialog.open({"mode": "choice", "person": w["person"], "title": harbor.harbor_name, "lines": w["lines"],
+			"choices": [["Explore the town", "stroll"], ["Harbor business", "business"]]})
+		if await _quest_dialog.closed == "stroll":
+			_stroll_ashore(harbor)
+			return
 	_harbor_menu.call("open", harbor)
 
 

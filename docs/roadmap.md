@@ -239,7 +239,9 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Quays, piers and moles can be walked on (Game.is_walkable) and are solid for ships; houses are solid for the captain
 - [x] Fix: harbors on the big mainlands (Port Aurel, Valmar) sat 250 px inland with their pier on dry land; they now sit at the coast
 - [x] The 8 smugglers' harbors stay as they were (the world is unchanged); Gallows Bay is added on its own
-- [x] tests/city_check.tscn; the city costs about 3–4 ms per frame with the whole city on screen (RTX 3060)
+- [x] The cities are 2.2x bigger: avenues 76 px wide and cross streets 60 px, big houses lining the streets block by block (~230 per city), a big square and basin
+- [x] Docking at a big city: the harbor master (Benedetto in Port Aurel, One-Eyed Mags in Gallows Bay) welcomes you in the chat window: "Explore the town" puts you on your feet on the pier, "Harbor business" opens the harbor menu as before
+- [x] tests/city_check.tscn; the city costs about 3.9 ms per frame with the whole city on screen (RTX 3060)
 
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines

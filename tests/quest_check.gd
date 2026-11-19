@@ -163,6 +163,10 @@ func _dock(harbor_name: String) -> void:
 
 
 func _close_harbor() -> void:
+	# A big city's harbor master welcomes you after the quest chat: take "Harbor business"
+	var dialog := main.get_node("QuestDialog") as QuestDialog
+	if dialog.is_open() and dialog.get("_talk").get("mode", "") == "choice":
+		dialog.call("_close", "business")
 	var hm := main.get_node("HarborMenu")
 	if hm.visible:
 		hm.call("close")

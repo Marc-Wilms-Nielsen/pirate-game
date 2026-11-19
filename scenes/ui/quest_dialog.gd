@@ -83,12 +83,20 @@ func open(talk: Dictionary) -> void:
 	_name.text = person["name"]
 	_role.text = person["title"]
 	var offer: bool = talk["mode"] == "offer"
-	_title.text = ("New quest: " if offer else "Quest complete: ") + String(talk["title"])
+	var choice: bool = talk["mode"] == "choice" # a plain conversation with its own buttons
+	if choice:
+		_title.text = String(talk["title"])
+	else:
+		_title.text = ("New quest: " if offer else "Quest complete: ") + String(talk["title"])
 	_text.text = "\n".join(PackedStringArray(talk["lines"]))
 	_extra.text = String(talk.get("goal", "")) if offer else String(talk.get("reward", ""))
 	_extra.add_theme_color_override("font_color", UiTheme.ACCENT if offer else UiTheme.GOOD)
 	UiTheme.clear(_buttons)
-	if offer:
+	if choice: # [[label, result], ...]: closing gives that result
+		for c in talk["choices"]:
+			var result: String = c[1]
+			_buttons.add_child(UiTheme.button(String(c[0]), func() -> void: _close(result)))
+	elif offer:
 		_buttons.add_child(UiTheme.button("Decline", func() -> void: _close("decline")))
 		_buttons.add_child(UiTheme.button("Accept", func() -> void: _close("accept")))
 	else:
