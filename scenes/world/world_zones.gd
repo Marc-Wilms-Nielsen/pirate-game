@@ -17,6 +17,12 @@ const SEA_ZONES := 9
 const HOME_WEIGHT := 3500.0 ## px: how far the home waters reach out round Sunhaven
 const MAINLAND_WEIGHT := 1.8 ## x a mainland's radius
 const SETTLE_TIME := 1.0 ## seconds inside a new area before its name is shown (no flicker at borders)
+const WARP_BIG := 900.0 ## px: the long, gentle bends of a border
+const WARP_SMALL := 260.0 ## px: the finer unevenness on top
+const WARP_LONG := 9000.0 ## px between the long bends
+const WARP_SHORT := 1900.0 ## px between the small wiggles
+const OUTLINE_STEP := 250.0 ## px: how finely the uneven borders are drawn
+const TINT_STEP := 1500.0 ## px: the coarser outline the tint on the map is filled with
 
 var zones: Array[Dictionary] = [] ## {name, subtitle, kind, center, weight, color, polygon, label_at}
 var current := -1 ## the area the player is in (after settling)
@@ -86,13 +92,48 @@ func build() -> void:
 			if i != j:
 				poly = _clip(poly, i, j)
 		zones[i]["polygon"] = poly
-		zones[i]["label_at"] = _label_spot(i, poly)
+		zones[i]["label_at"] = unwarp(_label_spot(i, poly))
+		# The uneven border as it lies in the world (see warp): each straight edge in many
+		# small steps, moved back by the warp. "edges" leaves out the world's outer frame.
+		var outline := PackedVector2Array()
+		var edges: Array[PackedVector2Array] = []
+		for k in poly.size():
+			var a := poly[k]
+			var bb := poly[(k + 1) % poly.size()]
+			var frame := (absf(a.x) > b * 0.999 and absf(bb.x) > b * 0.999) or (absf(a.y) > b * 0.999 and absf(bb.y) > b * 0.999)
+			var steps := maxi(1, ceili(a.distance_to(bb) / OUTLINE_STEP))
+			var edge := PackedVector2Array()
+			for s in steps + 1:
+				var p := unwarp(a.lerp(bb, float(s) / steps))
+				edge.append(p)
+				if s < steps:
+					outline.append(p)
+			if not frame:
+				edges.append(edge)
+		zones[i]["outline"] = outline
+		zones[i]["edges"] = edges
+		# The tint needs a shape Godot can fill; where a bend makes the outline cross itself
+		# (near a sharp corner), the tint uses the straight shape and only the line is uneven
+		var coarse := _outline(poly, TINT_STEP) # fewer points: the fine outline has too many nearly straight ones to fill
+		zones[i]["tint"] = coarse if not Geometry2D.triangulate_polygon(coarse).is_empty() else poly
 	# Open sea is named after who trades there
 	for z in zones:
 		if z["kind"] == "sea":
 			z["subtitle"] = _sea_subtitle(zones.find(z))
 	# Names that promise something should keep it: Smuggler's Run goes to pirate waters
 	_match_name("Smuggler's Run", "Pirate waters")
+
+
+## The uneven outline of a straight-edged area, in steps of about `step` px.
+func _outline(poly: PackedVector2Array, step: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for k in poly.size():
+		var a := poly[k]
+		var bb := poly[(k + 1) % poly.size()]
+		var steps := maxi(1, ceili(a.distance_to(bb) / step))
+		for s in steps:
+			out.append(unwarp(a.lerp(bb, float(s) / steps)))
+	return out
 
 
 ## Swaps names so that `zone_name` ends up on an area with this subtitle (if there is one).
@@ -114,10 +155,11 @@ func _match_name(zone_name: String, subtitle: String) -> void:
 
 ## The area at a world position (same rule as the borders on the map).
 func zone_at(pos: Vector2) -> int:
+	var q := pos + warp(pos) # the borders wander a little, like real ones
 	var best := -1
 	var best_d := INF
 	for i in zones.size():
-		var d := _power(pos, i)
+		var d := _power(q, i)
 		if d < best_d:
 			best_d = d
 			best = i
@@ -127,6 +169,26 @@ func zone_at(pos: Vector2) -> int:
 func zone_name_at(pos: Vector2) -> String:
 	var i := zone_at(pos)
 	return "" if i < 0 else String(zones[i]["name"])
+
+
+## Makes the borders uneven, like real ones: a spot is judged a little to one side of where it
+## is, by two layers of gentle waves (one long and slow, one shorter and finer). Smooth and the
+## same every time, so a border always runs the same way.
+static func warp(p: Vector2) -> Vector2:
+	var k1 := TAU / WARP_LONG
+	var k2 := TAU / WARP_SHORT
+	return Vector2(
+		WARP_BIG * sin(p.y * k1 + 1.3) + WARP_SMALL * sin(p.y * k2 * 1.1 + p.x * k2 * 0.4 + 4.1),
+		WARP_BIG * sin(p.x * k1 * 0.9 + 2.7) + WARP_SMALL * sin(p.x * k2 * 1.05 - p.y * k2 * 0.3 + 0.6))
+
+
+## The world spot p whose warped position is q (so a straight border line, unwarped, gives the
+## uneven border as it really lies). A few rounds of p = q - warp(p) settle on it.
+static func unwarp(q: Vector2) -> Vector2:
+	var p := q - warp(q)
+	for i in 4:
+		p = q - warp(p)
+	return p
 
 
 func _power(p: Vector2, i: int) -> float:

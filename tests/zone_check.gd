@@ -48,10 +48,21 @@ func _ready() -> void:
 	for k in 500:
 		var p := Vector2.from_angle(rng.randf() * TAU) * sqrt(rng.randf()) * 44000.0
 		var i := zones.zone_at(p)
-		if Geometry2D.is_point_in_polygon(p, zones.zones[i]["polygon"]):
+		if Geometry2D.is_point_in_polygon(p, zones.zones[i]["outline"]):
 			matches += 1
-	_check(matches >= 498, "the borders on the map match the game (%d/500 spots)" % matches)
+	_check(matches >= 495, "the uneven borders on the map match the game (%d/500 spots)" % matches)
 	_check(zones.zone_name_at(Vector2.ZERO) == "The Sunhaven Isles", "Sunhaven lies in The Sunhaven Isles")
+	# The borders are uneven: a straight border line would put these two spots in the same area
+	var wavy := 0
+	for z in zones.zones:
+		for e in z["edges"]:
+			var edge: PackedVector2Array = e
+			var mid_bend := edge[edge.size() / 2].distance_to(edge[0].lerp(edge[edge.size() - 1], 0.5))
+			if mid_bend > 100.0:
+				wavy += 1
+	_check(wavy > 10, "the borders wander instead of running straight (%d bent edges)" % wavy)
+	var filled := zones.zones.filter(func(z: Dictionary) -> bool: return z["tint"] != z["polygon"]).size()
+	print("     %d of %d areas are tinted with their uneven outline" % [filled, zones.zones.size()])
 
 	# The name shows at the start
 	await _frames(90)

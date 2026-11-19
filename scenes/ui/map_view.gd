@@ -223,8 +223,10 @@ func _draw() -> void:
 	var zones := get_tree().get_first_node_in_group("world_zones") as WorldZones
 	if zones: # a faint tint per named area, under the islands
 		for z in zones.zones:
-			if (z["polygon"] as PackedVector2Array).size() >= 3:
-				draw_colored_polygon(z["polygon"], Color(z["color"], 0.07))
+			var outline: PackedVector2Array = z.get("tint", z["polygon"]) # the uneven border (if it can be filled)
+			if outline.size() >= 3:
+				draw_colored_polygon(outline, Color(z["color"], 0.07))
+
 	for island in islands: # laguner først, så øerne tegnes ovenpå
 		draw_colored_polygon(_shape(island, 2), Color(0.45, 0.85, 0.85, 0.45))
 	for island in islands:
@@ -355,21 +357,15 @@ func _arrow(p: Vector2, rot: float, length: float, col: Color) -> void:
 ## The named areas: dashed borders and big, faint names that fade as you zoom in (so they
 ## don't cover harbors and islands up close).
 func _draw_zones(zones: WorldZones) -> void:
-	var view := _map_rect()
-	var border := Color(1, 1, 1, 0.22)
-	var edge: float = zones.bounds
+	var view := _map_rect().grow(4.0)
+	var border := Color(1, 1, 1, 0.16 if _zoom < 1.5 else 0.24) # quieter when zoomed far out
 	for z in zones.zones:
-		var poly: PackedVector2Array = z["polygon"]
-		for k in poly.size():
-			var wa := poly[k]
-			var wb := poly[(k + 1) % poly.size()]
-			# The outer edge of the world's frame is not a border between two areas
-			if (absf(wa.x) > edge * 0.999 and absf(wb.x) > edge * 0.999) or (absf(wa.y) > edge * 0.999 and absf(wb.y) > edge * 0.999):
-				continue
-			var a := _to_map(wa)
-			var b := _to_map(wb)
-			if view.intersects(Rect2(a, Vector2.ZERO).expand(b)):
-				draw_dashed_line(a, b, border, 1.0, 4.0)
+		# The uneven borders (the world's outer frame is already left out of "edges")
+		for edge in z.get("edges", []):
+			var pts := PackedVector2Array()
+			for p in edge:
+				pts.append(_to_map(p))
+			_dashed_path(pts, border, view)
 	var alpha := clampf(0.7 - (_zoom - 1.0) * 0.09, 0.1, 0.7)
 	var font := UiTheme.title_font()
 	var font_size := 8 if _zoom < 1.8 else (9 if _zoom < 3.5 else 11)
@@ -387,6 +383,33 @@ func _draw_zones(zones: WorldZones) -> void:
 		placed.append(box)
 		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 1, Color(0.05, 0.1, 0.15, alpha * 0.5))
 		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(Color(z["color"]).lightened(0.45), alpha))
+
+
+## A dashed line along a winding path: the dashes carry on across the small bends, so it looks
+## like one drawn border rather than many short straight pieces.
+func _dashed_path(pts: PackedVector2Array, col: Color, view: Rect2, dash := 4.0, gap := 3.0) -> void:
+	var on := true
+	var left := dash
+	for k in pts.size() - 1:
+		var a := pts[k]
+		var b := pts[k + 1]
+		var seg := a.distance_to(b)
+		if seg < 0.01:
+			continue
+		if not view.intersects(Rect2(a, Vector2.ZERO).expand(b)):
+			on = true
+			left = dash
+			continue
+		var t := 0.0
+		while t < seg:
+			var step := minf(left, seg - t)
+			if on:
+				draw_line(a.lerp(b, t / seg), a.lerp(b, (t + step) / seg), col, 1.0, true)
+			t += step
+			left -= step
+			if left <= 0.0:
+				on = not on
+				left = dash if on else gap
 
 
 ## Main quest: yellow "!" where a quest waits, "?" where one can be handed in, and a pulsing
