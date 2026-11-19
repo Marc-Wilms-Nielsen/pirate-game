@@ -241,6 +241,9 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Docking: Old Hendrik the harbourmaster welcomes you – Harbor business or Stroll ashore
 - [x] Its own named waters (The Lantern Roads) and a town mark on the map; the quest line doesn't use it. tests/city_check.tscn
 
+## Round 20 – Developer mode
+- [x] Settings → Developer mode: fast travel to every harbor for free, and the purse stays at 1,000,000 gold (tests/travel_check.tscn)
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne

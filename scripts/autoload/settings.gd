@@ -18,6 +18,7 @@ var water_quality: int = 2 ## 0 = low, 1 = medium, 2 = high
 var render_scale: float = 1.0 ## the water is drawn at this fraction of the window resolution
 var effects: bool = true ## kølvand og røg
 var show_fps: bool = false
+var developer_mode: bool = false ## free fast travel to every harbor and 1,000,000 gold
 var auto_quality_done: bool = false ## set once AutoQuality has picked settings on first launch
 
 const RENDER_SCALES := [0.5, 0.75, 1.0]
@@ -127,6 +128,7 @@ func reset_to_defaults() -> void:
 	render_scale = 1.0
 	effects = true
 	show_fps = false
+	developer_mode = false
 	apply()
 	save_settings()
 
@@ -136,7 +138,9 @@ func set_value(key: String, value: Variant) -> void:
 	set(key, value)
 	apply()
 	save_settings()
+	if key == "developer_mode":
+		Game.dev_top_up()
 
 
 func _keys() -> Array[String]:
-	return ["master_volume", "ambience_volume", "sfx_volume", "music_volume", "fullscreen", "vsync", "max_fps", "water_quality", "render_scale", "effects", "show_fps", "auto_quality_done"]
+	return ["master_volume", "ambience_volume", "sfx_volume", "music_volume", "fullscreen", "vsync", "max_fps", "water_quality", "render_scale", "effects", "show_fps", "developer_mode", "auto_quality_done"]

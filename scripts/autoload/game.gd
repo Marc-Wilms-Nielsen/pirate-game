@@ -74,6 +74,8 @@ func _ready() -> void:
 
 func reset() -> void:
 	gold = TEST_START_GOLD if _test_mode else START_GOLD
+	if Settings.developer_mode and not _test_mode:
+		gold = DEV_GOLD
 	cannonballs = START_CANNONBALLS
 	food = START_FOOD
 	crew = Catalog.START_CREW
@@ -397,6 +399,15 @@ func kingdom_cooldown(index: int) -> void:
 
 # --- Guld og varer -----------------------------------------------------------
 
+const DEV_GOLD := 1000000
+
+## Developer mode (Settings.developer_mode): fills the purse up to a million.
+func dev_top_up() -> void:
+	if Settings.developer_mode and gold < DEV_GOLD:
+		gold = DEV_GOLD
+		changed.emit()
+
+
 func add_gold(amount: int) -> void:
 	gold += amount
 	changed.emit()
@@ -408,6 +419,7 @@ func spend(amount: int) -> bool:
 		return false
 	gold -= amount
 	changed.emit()
+	dev_top_up() # developer mode: the purse never runs dry
 	return true
 
 
@@ -859,6 +871,7 @@ func load_game() -> bool:
 		extra.call(data)
 	loaded_from_save = true
 	changed.emit()
+	dev_top_up()
 	return true
 
 

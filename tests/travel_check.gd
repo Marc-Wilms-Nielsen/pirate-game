@@ -136,6 +136,25 @@ func _ready() -> void:
 	Game.user_zoom = ZoomCamera.MIN_USER_ZOOM
 	_check(is_equal_approx(cam.effective_user_zoom(), ZoomCamera.ON_FOOT_MIN_ZOOM), "on foot the view stays close even if you zoomed far out at sea")
 	cam.free()
+
+	# Developer mode: every harbor, free trips and a million gold
+	var far: Harbor = null
+	for node in get_tree().get_nodes_in_group("harbors"):
+		var h := node as Harbor
+		if h.kind != "home" and not Game.visited_harbors.has(h.harbor_name):
+			far = h
+			break
+	_check(far != null and travel.blocked_reason(far).begins_with("Not visited"), "without developer mode an unvisited harbor stays locked")
+	Game.gold = 10
+	Settings.set_value("developer_mode", true)
+	_check(Game.gold == Game.DEV_GOLD, "developer mode fills the purse to a million")
+	_check(travel.blocked_reason(far) == "", "developer mode opens every harbor (%s)" % far.harbor_name)
+	_check(FastTravel.cost(ship.global_position, far.global_position) == 0, "developer mode trips are free")
+	Game.spend(500)
+	_check(Game.gold == Game.DEV_GOLD, "developer mode refills after spending")
+	var went: bool = await travel.travel(far)
+	_check(went and ship.global_position.distance_to(far.dock_position()) < 600.0, "developer mode trip to an unvisited harbor arrives")
+	Settings.set_value("developer_mode", false)
 	print("TRAVEL CHECK DONE. Failures: %d" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
 

@@ -33,6 +33,8 @@ func _ready() -> void:
 
 ## Gold for a trip: a small base price plus a little per distance (rounded to 5).
 static func cost(from: Vector2, to: Vector2) -> int:
+	if Settings.developer_mode:
+		return 0
 	return int(snappedf(20.0 + from.distance_to(to) * 0.008, 5.0))
 
 
@@ -41,7 +43,7 @@ func blocked_reason(harbor: Harbor) -> String:
 	var s := _player_ship()
 	if s == null or busy:
 		return "Already travelling"
-	if not Game.visited_harbors.has(harbor.harbor_name):
+	if not Game.visited_harbors.has(harbor.harbor_name) and not Settings.developer_mode:
 		return "Not visited yet – dock there once first"
 	if harbor.kind == "home" and not Homestead.claimed:
 		return "Buy the island first"

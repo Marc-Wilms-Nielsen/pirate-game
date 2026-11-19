@@ -202,7 +202,9 @@ func _build_settings() -> void:
 	_option_row("Water resolution", "render_scale", ["50% (fastest)", "75%", "100% (sharpest)"], Settings.RENDER_SCALES)
 	_option_row("Wakes and gun smoke", "effects", ["Off", "On"], [false, true])
 	_option_row("Show FPS counter", "show_fps", ["No", "Yes"], [false, true])
+	_option_row("Developer mode", "developer_mode", ["Off", "On"], [false, true])
 	_settings_box.add_child(UiTheme.label("Is the game stuttering? Lower the water resolution or quality and turn on the FPS counter.", 9, UiTheme.MUTED))
+	_settings_box.add_child(UiTheme.label("Developer mode: free fast travel to every harbor and 1,000,000 gold.", 9, UiTheme.MUTED))
 	_settings_box.add_child(UiTheme.button("Reset to defaults", func() -> void:
 		Settings.reset_to_defaults()
 		_build_settings()))
