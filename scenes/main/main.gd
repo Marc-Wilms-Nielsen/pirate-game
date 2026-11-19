@@ -75,6 +75,10 @@ func _ready() -> void:
 	add_child(layers)
 	move_child(layers, $Ocean.get_index())
 	layers.setup($Ocean as ColorRect, _seabed)
+	# Named areas of the sea: their name shows when you sail in, and they are drawn on the map
+	var zones := WorldZones.new()
+	zones.name = "WorldZones"
+	add_child(zones)
 	# Main quest line: marks over harbors, bosses, and the chat window with the quest givers
 	var quest_world := QuestWorld.new()
 	quest_world.name = "QuestWorld"

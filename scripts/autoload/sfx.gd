@@ -10,6 +10,7 @@ const SOUNDS := {
 	"hurt": "res://assets/audio/sfx/hurt.wav",
 	"splash": "res://assets/audio/sfx/splash.wav",
 	"click": "res://assets/audio/sfx/ui_click_soft.wav", ## deep, soft wooden tock (tools/generate_click.gd)
+	"chime": "res://assets/audio/sfx/zone_chime.wav", ## entering a new area of the sea (tools/generate_chime.gd)
 	"gunshot": "res://assets/audio/sfx/gunshot.wav",
 	"explosion": "res://assets/audio/sfx/explosion.wav",
 	"fire": "res://assets/audio/sfx/fire_whoosh.wav",
