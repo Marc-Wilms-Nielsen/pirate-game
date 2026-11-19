@@ -531,7 +531,7 @@ const HARBOR_NAMES := {
 	"aurelia": ["Port Aurel", "Crimson Bay", "Kingsmouth", "Redcliff", "Sant Alfonso", "Ember Cove", "Rosewater"],
 	"valdora": ["Valmar", "Azure Haven", "Queensport", "Bluestone", "Isabella's Rest", "Silverbay", "Tidewall"],
 	"nerath": ["Nerholm", "Greenwater", "Ottokar's Pier", "Mosshaven", "Oakharbor", "Fernport", "Ironwood Quay"],
-	"smugglers": ["Skeleton Cove", "Rum Bay", "Blackwater", "Cutthroat Creek", "Hangman's Hook", "Bilgerat Den", "Shadow Inlet", "Dead Man's Drop"],
+	"smugglers": ["Skeleton Cove", "Rum Bay", "Blackwater", "Cutthroat Creek", "Hangman's Hook", "Bilgerat Den", "Shadow Inlet", "Dead Man's Drop", "Gallows Bay"],
 }
 const HARBORS := [ # bruges af gamle tests: de første fem havne
 	{"name": "Sunhaven", "kind": "trade"},

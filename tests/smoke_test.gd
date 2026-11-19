@@ -97,7 +97,7 @@ func _deep_spot() -> Vector2:
 func _run() -> void:
 	var ship := get_tree().get_first_node_in_group("player_ship") as PlayerShip
 	_check(get_tree().get_nodes_in_group("islands").size() >= 10, "mindst 10 øer")
-	_check(get_tree().get_nodes_in_group("harbors").filter(func(h): return h.kind != "home").size() == 39, "39 havne fordelt på 5 fraktioner + hjemø")
+	_check(get_tree().get_nodes_in_group("harbors").filter(func(h): return h.kind != "home").size() == 40, "40 havne: 39 fordelt på 5 fraktioner + piratbyen Gallows Bay (+ hjemø)")
 	_check(get_tree().get_nodes_in_group("islands").size() >= 250 and get_tree().get_nodes_in_group("villages").size() >= 30, "10x verden: 250+ øer og 30+ fiskerlandsbyer")
 	_check(get_tree().get_nodes_in_group("resources").size() > 10, "træer, klipper og urter på øerne")
 	_check(get_tree().get_nodes_in_group("chests").size() > 3, "kister spawnet")

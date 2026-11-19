@@ -230,6 +230,16 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Sailing into a new area shows its name big mid-screen with a soft bell (after a moment inside, so borders don't flash names); also at the start
 - [x] On the map: a faint tint per area, dashed borders and the names, which fade as you zoom in
 - [x] Flavour only – no rules change. tests/zone_check.tscn
+- [x] The borders wind unevenly like real ones (the same in the game and on the map)
+
+## Round 19 – Big cities
+- [x] Port Aurel, Aurelia's capital: a stone harbor with a quay, a wide central pier, side piers, two breakwater moles, a lighthouse and a gun battery, and a town behind it to explore: an avenue, cross streets, a square with a fountain and market stalls, 100+ solid houses, people and guards
+- [x] Gallows Bay, a new pirate city of the Smugglers' Brotherhood on the wild mainland nearest the middle: the same, in tarred timber with black flags, a fire pit and a gallows; always gloomy, with braziers and drifting fog
+- [x] Life on the water: ships moored at the quays, two ships sailing in and out, rowboats in the basin, a lighthouse beam at night
+- [x] Quays, piers and moles can be walked on (Game.is_walkable) and are solid for ships; houses are solid for the captain
+- [x] Fix: harbors on the big mainlands (Port Aurel, Valmar) sat 250 px inland with their pier on dry land; they now sit at the coast
+- [x] The 8 smugglers' harbors stay as they were (the world is unchanged); Gallows Bay is added on its own
+- [x] tests/city_check.tscn; the city costs about 3–4 ms per frame with the whole city on screen (RTX 3060)
 
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines

@@ -32,6 +32,7 @@ const HOME_RADIUS := 360.0 ## hjemøen er stor nok til en hel lille by
 var _duel_menu: CanvasLayer
 var _escort_sync_pending := false
 var _castle_spots: Array[Vector2] = [] ## ingen træer eller kister lige ved slottene
+var _city_spots: Array[Vector2] = [] ## the middle of each big city's town (kept clear too)
 var _streamer: WorldStreamer
 var _seabed: Seabed
 var _quest_dialog: QuestDialog
@@ -225,6 +226,13 @@ func _generate_world() -> void:
 
 	var name_index := 0
 	var kingdom_index := 0
+	# Gallows Bay, the pirate city: on the wild mainland nearest the middle of the world
+	# (chosen without the world's random numbers, so the rest of the world stays the same)
+	var pirate_city := -1
+	for i in range(1, mini(mainland_count + 1, placed.size())):
+		if not kingdom_lands.has(i) and float(placed[i]["radius"]) > 1000.0:
+			if pirate_city < 0 or (placed[i]["pos"] as Vector2).length() < (placed[pirate_city]["pos"] as Vector2).length():
+				pirate_city = i
 	for i in placed.size():
 		var island := IslandScene.instantiate() as Island
 		island.position = placed[i]["pos"]
@@ -253,13 +261,21 @@ func _generate_world() -> void:
 			var names := Catalog.ISLAND_NAMES
 			island.island_name = names[name_index % names.size()] + ("" if name_index < names.size() else " " + ["II", "III", "IV", "V", "VI", "VII", "VIII"][mini(name_index / names.size() - 1, 6)])
 			name_index += 1
+		# The two big cities: Aurelia's capital, and the pirates' Gallows Bay
+		if island.harbor_name == Catalog.HARBOR_NAMES["aurelia"][0]:
+			island.harbor_city = "royal"
+		if i == pirate_city:
+			island.harbor_name = Catalog.HARBOR_NAMES["smugglers"][-1]
+			island.harbor_kind = "pirate"
+			island.harbor_city = "pirate"
+			island.harbor_angle = (-placed[i]["pos"]).angle() # facing the middle of the world
 		_world.add_child(island)
 		var castle_index := -1
 		if kingdom_lands.has(i):
 			castle_index = kingdom_lands.find(i)
 			_add_castle(island, castle_index, rng)
 			kingdom_index += 1
-		var has_harbor := harbor_factions.has(i) or i == home_index
+		var has_harbor := harbor_factions.has(i) or i == home_index or i == pirate_city
 		if i == home_index:
 			# Hjemøen bygges med det samme (byggefeltet skal findes fra start)
 			_populate_island(island, true)
@@ -275,6 +291,23 @@ func _generate_world() -> void:
 			_streamer.add_wide(island, island.radius * 1.5 * island.lagoon_size, func() -> void:
 				_populate_island(island, has_harbor)
 				_add_resources(island))
+	# Harbors on the big mainlands sat inland (their pier on dry land): move them out to the coast
+	for node in _world.get_children():
+		var isl := node as Island
+		if isl and isl.harbor:
+			_harbor_to_shore(isl.harbor)
+	# The big cities round their harbors
+	for node in _world.get_children():
+		var isl := node as Island
+		if isl and isl.harbor and isl.harbor_city != "":
+			var city := BigCity.new()
+			city.name = "City_" + isl.harbor_name.replace(" ", "")
+			city.harbor = isl.harbor
+			city.kind = isl.harbor_city
+			city.global_transform = isl.harbor.global_transform
+			_world.add_child(city)
+			_streamer.add_wide(city, BigCity.RADIUS)
+			_city_spots.append(isl.harbor.to_global(Vector2(-BigCity.LAND_DEPTH * 0.5, 0)))
 	# Havbunden bygges også bid for bid
 	_streamer.add_cell_builder(func(cell: Vector2i, rect: Rect2) -> void:
 		if _seabed:
@@ -323,7 +356,7 @@ func _assign_harbors(placed: Array[Dictionary], home_index: int, kingdom_lands: 
 	# Smuglerne: de mest afsides havne (langt fra midten)
 	left.sort_custom(func(a: int, b: int) -> bool: return placed[a]["pos"].length() > placed[b]["pos"].length())
 	var smug: Array = Catalog.HARBOR_NAMES["smugglers"]
-	for n in mini(smug.size(), left.size()):
+	for n in mini(int(Catalog.FACTIONS["smugglers"]["harbors"]), left.size()): # Gallows Bay (the last name) is a big city added on its own
 		result[left[0]] = ["smugglers", smug[n]]
 		left.remove_at(0)
 	var free: Array = Catalog.HARBOR_NAMES["free"]
@@ -472,12 +505,25 @@ func _add_castle(island: Island, index: int, rng: RandomNumberGenerator) -> void
 
 
 ## Tilfældigt punkt på land, der ikke ligger oven i et slot.
+## Moves a harbor out along its direction until the water starts just past its waterfront.
+func _harbor_to_shore(h: Harbor) -> void:
+	var out := Vector2.from_angle(h.global_rotation)
+	for i in 80:
+		if not Game.is_land(h.to_global(Vector2(15, 0))):
+			return
+		h.global_position += out * 10.0
+
+
 func _land_point(island: Island, min_f: float, max_f: float) -> Vector2:
 	var p := island.random_land_point(min_f, max_f)
-	for attempt in 6:
+	for attempt in 10:
 		var clear := true
 		for c in _castle_spots:
 			if p.distance_to(c) < 360.0: # slot og by
+				clear = false
+				break
+		for c in _city_spots: # no trees, chests or beasts in the streets of a big city
+			if p.distance_to(c) < BigCity.LAND_DEPTH + 150.0:
 				clear = false
 				break
 		if clear:

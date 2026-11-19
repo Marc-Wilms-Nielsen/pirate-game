@@ -78,6 +78,18 @@ static func clock_text(t: float) -> String:
 	return "%02d:%02d" % [floori(minutes / 60.0), minutes % 60]
 
 
+## 0..1: how deep in a pirate city's gloom the player is (see BigCity.gloom).
+func city_gloom() -> float:
+	var player := get_tree().get_first_node_in_group("player_character") as Node2D
+	var ship := get_tree().get_first_node_in_group("player_ship") as Node2D
+	var focus := player.global_position if player else (ship.global_position if ship else Vector2.ZERO)
+	var g := 0.0
+	for c in get_tree().get_nodes_in_group("big_cities"):
+		if (c as Node2D).is_visible_in_tree():
+			g = maxf(g, (c as BigCity).gloom(focus))
+	return g
+
+
 func _update_light(delta: float) -> void:
 	var day := daylight(Game.world_time)
 	Game.night = 1.0 - day
@@ -87,15 +99,18 @@ func _update_light(delta: float) -> void:
 	col = col.lerp(col * DUSK_COLOR, dusk)
 	var dark: float = _current["dark"]
 	col = Color(col.r * dark, col.g * dark, col.b * lerpf(dark, 1.0, 0.3))
+	# The pirate city lies in gloom, day and night: a cold, dim light and drifting fog
+	var gloom := city_gloom()
+	col = col.lerp(Color(col.r * 0.42, col.g * 0.4, col.b * 0.55), gloom)
 	# Lyn
 	if _overlay.flash > 0.0:
 		col = col.lerp(Color(1.6, 1.6, 1.8), _overlay.flash * 0.6)
 	_modulate.color = col
 	_overlay.rain = _current["rain"]
-	_overlay.fog = _current["fog"]
-	_overlay.night = Game.night
-	# Lanterner tændes i skumringen
-	var glow := smoothstep(0.25, 0.7, Game.night + (1.0 - dark) * 0.6)
+	_overlay.fog = maxf(float(_current["fog"]), gloom * 0.45)
+	_overlay.night = maxf(Game.night, gloom * 0.7)
+	# Lanterner tændes i skumringen (and always in the gloom of the pirate city)
+	var glow := maxf(smoothstep(0.25, 0.7, Game.night + (1.0 - dark) * 0.6), gloom)
 	# Only lights on (or just off) the screen are switched on: each enabled light makes the
 	# renderer draw everything it touches once more, and the world has 200+ lanterns.
 	var vp := get_viewport()

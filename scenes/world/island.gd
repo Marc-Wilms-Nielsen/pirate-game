@@ -32,6 +32,7 @@ const SHORE_FADE := 22.0 ## pixels hvor sandet toner ud i vandet
 @export var harbor_name: String = "" ## Tom = ingen havn
 @export_enum("trade", "pirate", "home") var harbor_kind: String = "trade"
 @export var harbor_angle: float = 0.0 ## Retning fra øens midte, hvor molen ligger
+var harbor_city: String = "" ## "royal" or "pirate": a big city (BigCity) is built round this harbor
 @export_group("")
 ## 0 = rund lille ø, 1 = fastland med bugter og halvøer
 @export_range(0.0, 1.0) var coast_detail: float = 0.0:
@@ -257,6 +258,7 @@ func _create_harbor() -> void:
 	harbor = Harbor.new()
 	harbor.harbor_name = harbor_name
 	harbor.kind = harbor_kind
+	harbor.city = harbor_city
 	harbor.position = Vector2.from_angle(harbor_angle) * shore_radius(harbor_angle) * 0.86
 	harbor.rotation = harbor_angle
 	add_child(harbor)

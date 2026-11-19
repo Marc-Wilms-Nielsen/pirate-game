@@ -48,6 +48,7 @@ var kingdom_wins: Dictionary = {} ## kongerige-id -> antal vundne dueller
 var kingdom_ready_at: Dictionary = {} ## kongerige-id -> unix-tid hvor det kan udfordres igen
 var visited_harbors: Dictionary = {} ## harbor name -> true: where you have docked (fast travel goes there)
 var captain_look: Dictionary = {} ## the captain's chosen look: part key -> option id (Catalog.CAPTAIN_STYLE_PARTS)
+var walkways: Array = [] ## big cities: their quays, piers and moles can be walked on (see is_walkable)
 var world_time: float = 0.3 ## tid på døgnet 0..1 (0 = midnat, 0.5 = middag) – gemmes
 var night: float = 0.0 ## 0 = dag, 1 = nat (sættes af Sky)
 var weather: String = "clear" ## sættes af Sky
@@ -756,6 +757,15 @@ func is_safe_water(pos: Vector2) -> bool:
 func is_land(pos: Vector2) -> bool:
 	for island in islands_near(pos):
 		if (island as Island).is_on_land(pos):
+			return true
+	return false
+
+## Land, or a big city's stone quay, pier or mole (where the captain walks instead of swimming).
+func is_walkable(pos: Vector2) -> bool:
+	if is_land(pos):
+		return true
+	for w in walkways:
+		if is_instance_valid(w) and w.covers(pos):
 			return true
 	return false
 

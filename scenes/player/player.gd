@@ -45,6 +45,7 @@ var _splash: AudioStreamPlayer
 
 func _ready() -> void:
 	add_to_group("player_character")
+	collision_mask = BigCity.BUILDING_LAYER # the houses of the big cities are solid
 	WorldSky.add_lantern(self, Vector2.ZERO, 70.0, Color(1.0, 0.85, 0.6), 0.7)
 	($Camera2D as ZoomCamera).base_zoom = 2.0
 	# On foot the view stays close and personal: you can zoom out much less than at sea
@@ -292,7 +293,7 @@ func can_board() -> bool:
 
 
 func _check_land() -> bool:
-	return Game.is_land(global_position)
+	return Game.is_walkable(global_position) # land, or a big city's quays and moles
 
 
 func _process(delta: float) -> void:
