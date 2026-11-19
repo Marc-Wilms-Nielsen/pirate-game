@@ -166,8 +166,10 @@ func _label_spot(i: int, poly: PackedVector2Array) -> Vector2:
 	# Mainland (and home) names go out on the water, past the coast, so they don't cover the
 	# island's own labels (the kingdom's castle, Sunhaven)
 	var center: Vector2 = zones[i]["center"]
+	if zones[i]["kind"] == "home": # the home waters lie all round Sunhaven: put the name south of it
+		return center + Vector2(0, float(zones[i]["weight"]) * 1.3)
 	var dir := (mid - center).normalized() if mid.distance_to(center) > 1.0 else Vector2.DOWN
-	var out := maxf(mid.distance_to(center) * 0.9, float(zones[i]["weight"]) * 0.75)
+	var out := maxf(mid.distance_to(center) * 0.9, float(zones[i]["weight"]) * 1.05)
 	return center + dir * out
 
 

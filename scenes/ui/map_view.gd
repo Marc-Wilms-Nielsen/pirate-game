@@ -372,7 +372,7 @@ func _draw_zones(zones: WorldZones) -> void:
 				draw_dashed_line(a, b, border, 1.0, 4.0)
 	var alpha := clampf(0.7 - (_zoom - 1.0) * 0.09, 0.1, 0.7)
 	var font := UiTheme.title_font()
-	var font_size := 9 if _zoom < 1.8 else (11 if _zoom < 3.5 else 13)
+	var font_size := 8 if _zoom < 1.8 else (9 if _zoom < 3.5 else 11)
 	var placed: Array[Rect2] = [] # names that would overlap one already written are left out
 	for z in zones.zones:
 		var p := _to_map(z["label_at"])
@@ -385,7 +385,7 @@ func _draw_zones(zones: WorldZones) -> void:
 		if placed.any(func(r: Rect2) -> bool: return r.intersects(box)):
 			continue
 		placed.append(box)
-		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color(0.05, 0.1, 0.15, alpha * 0.6))
+		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 1, Color(0.05, 0.1, 0.15, alpha * 0.5))
 		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(Color(z["color"]).lightened(0.45), alpha))
 
 
