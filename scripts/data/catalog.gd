@@ -897,3 +897,22 @@ static func style_option(options: Array, id: String) -> Dictionary:
 		if o["id"] == id:
 			return o
 	return options[0]
+
+# --- Named areas of the world ----------------------------------------------------
+# WorldZones (scenes/world/world_zones.gd) divides the sea into named areas around the world's
+# features: the home waters round Sunhaven, the waters of each kingdom and wild mainland, and
+# open sea between them. The name is shown when you sail into an area, and on the map.
+
+const ZONE_HOME := {"name": "The Sunhaven Isles", "subtitle": "Home waters", "color": Color(0.95, 0.78, 0.35)}
+## The waters around each kingdom's mainland (subtitle: the kingdom's name).
+const ZONE_KINGDOM_NAMES := {"aurelia": "Aurelian Waters", "valdora": "The Valdoran Sea", "nerath": "Nerath Sound"}
+## The waters around the wild mainlands, in order round the world.
+const ZONE_WILD_NAMES := ["The Jungle Coast", "The Serpent Wilds", "Golem Shore"]
+const ZONE_WILD_COLOR := Color(0.35, 0.7, 0.35)
+## Open sea between them. Subtitle by who trades there: smugglers, free traders, or no one.
+const ZONE_SEA_NAMES := ["The Sapphire Shallows", "The Drowned Reach", "Kraken's Deep", "The Coral Maze",
+	"Mermaid's Mirror", "The Windward Expanse", "Smuggler's Run", "The Graveyard of Ships", "The Gilded Strait",
+	"Stormbreak Waters", "The Pearl Banks", "The Silent Sea"]
+const ZONE_SEA_COLORS := [Color(0.35, 0.75, 0.95), Color(0.45, 0.55, 0.9), Color(0.3, 0.6, 0.75), Color(0.95, 0.6, 0.55),
+	Color(0.6, 0.85, 0.9), Color(0.75, 0.8, 0.95), Color(0.65, 0.45, 0.75), Color(0.6, 0.6, 0.65), Color(0.95, 0.85, 0.45),
+	Color(0.55, 0.6, 0.8), Color(0.9, 0.9, 0.85), Color(0.5, 0.65, 0.7)]

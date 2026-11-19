@@ -220,12 +220,19 @@ func _draw() -> void:
 			islands.append(island)
 	# Øernes former er gemt i verdenskoordinater – én transformation tegner dem alle
 	draw_set_transform(_map_rect().get_center() - _pan * s, 0.0, Vector2(s, s))
+	var zones := get_tree().get_first_node_in_group("world_zones") as WorldZones
+	if zones: # a faint tint per named area, under the islands
+		for z in zones.zones:
+			if (z["polygon"] as PackedVector2Array).size() >= 3:
+				draw_colored_polygon(z["polygon"], Color(z["color"], 0.07))
 	for island in islands: # laguner først, så øerne tegnes ovenpå
 		draw_colored_polygon(_shape(island, 2), Color(0.45, 0.85, 0.85, 0.45))
 	for island in islands:
 		draw_colored_polygon(_shape(island, 0), Color(0.94, 0.85, 0.62))
 		draw_colored_polygon(_shape(island, 1), Color(0.45, 0.68, 0.35))
 	draw_set_transform(Vector2.ZERO)
+	if zones:
+		_draw_zones(zones)
 	for island in islands:
 		if island.harbor_name == "" and island.island_name != "" and island.radius * s > 5.0:
 			_text(_to_map(island.global_position) + Vector2(0, island.radius * s + 9), island.island_name, 7, Color(1, 1, 1, 0.75))
@@ -255,7 +262,8 @@ func _draw() -> void:
 		draw_rect(Rect2(kp - Vector2(4, 2), Vector2(8, 5)), kc)
 		for x in [-4.0, 0.0, 3.0]:
 			draw_rect(Rect2(kp + Vector2(x - 0.5, -4.5), Vector2(2, 2.5)), kc)
-		_text(kp + Vector2(0, 10), castle.kingdom()["name"], 8, kc.lightened(0.4))
+		if _zoom >= 1.8: # zoomed out, the area names already say whose waters these are
+			_text(kp + Vector2(0, 10), castle.kingdom()["name"], 8, kc.lightened(0.4))
 
 	for node in get_tree().get_nodes_in_group("camps"):
 		var cp := _to_map((node as Node2D).global_position)
@@ -342,6 +350,43 @@ func _arrow(p: Vector2, rot: float, length: float, col: Color) -> void:
 	var side := f.orthogonal()
 	var pts := PackedVector2Array([p + f * length, p - f * length * 0.6 + side * length * 0.6, p - f * length * 0.6 - side * length * 0.6])
 	draw_colored_polygon(pts, col)
+
+
+## The named areas: dashed borders and big, faint names that fade as you zoom in (so they
+## don't cover harbors and islands up close).
+func _draw_zones(zones: WorldZones) -> void:
+	var view := _map_rect()
+	var border := Color(1, 1, 1, 0.22)
+	var edge: float = zones.bounds
+	for z in zones.zones:
+		var poly: PackedVector2Array = z["polygon"]
+		for k in poly.size():
+			var wa := poly[k]
+			var wb := poly[(k + 1) % poly.size()]
+			# The outer edge of the world's frame is not a border between two areas
+			if (absf(wa.x) > edge * 0.999 and absf(wb.x) > edge * 0.999) or (absf(wa.y) > edge * 0.999 and absf(wb.y) > edge * 0.999):
+				continue
+			var a := _to_map(wa)
+			var b := _to_map(wb)
+			if view.intersects(Rect2(a, Vector2.ZERO).expand(b)):
+				draw_dashed_line(a, b, border, 1.0, 4.0)
+	var alpha := clampf(0.7 - (_zoom - 1.0) * 0.09, 0.1, 0.7)
+	var font := UiTheme.title_font()
+	var font_size := 9 if _zoom < 1.8 else (11 if _zoom < 3.5 else 13)
+	var placed: Array[Rect2] = [] # names that would overlap one already written are left out
+	for z in zones.zones:
+		var p := _to_map(z["label_at"])
+		if not view.grow(40.0).has_point(p):
+			continue
+		var text := String(z["name"])
+		var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		var at := p - Vector2(w * 0.5, 0)
+		var box := Rect2(at - Vector2(2, font_size), Vector2(w + 4, font_size + 4))
+		if placed.any(func(r: Rect2) -> bool: return r.intersects(box)):
+			continue
+		placed.append(box)
+		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color(0.05, 0.1, 0.15, alpha * 0.6))
+		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(Color(z["color"]).lightened(0.45), alpha))
 
 
 ## Main quest: yellow "!" where a quest waits, "?" where one can be handed in, and a pulsing

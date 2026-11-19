@@ -225,6 +225,12 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] Paid as before: the first option of each part is free, the rest are bought once; earlier purchases are kept
 - [x] tests/style_check.tscn
 
+## Round 18 – Named areas of the sea
+- [x] 16 named areas built from the world: The Sunhaven Isles, the waters of the 3 kingdoms and 3 wild mainlands, and 9 open-sea areas (subtitled by who trades there: Free, Pirate or Royal waters, or Open sea)
+- [x] Sailing into a new area shows its name big mid-screen with a soft bell (after a moment inside, so borders don't flash names); also at the start
+- [x] On the map: a faint tint per area, dashed borders and the names, which fade as you zoom in
+- [x] Flavour only – no rules change. tests/zone_check.tscn
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne
