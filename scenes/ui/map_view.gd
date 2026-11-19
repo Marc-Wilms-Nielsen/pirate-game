@@ -249,6 +249,13 @@ func _draw() -> void:
 		if not view.has_point(p):
 			continue
 		var col: Color = Color(0.35, 0.85, 0.4) if harbor.kind == "home" else Catalog.FACTIONS[Game.faction_of(harbor.harbor_name)]["color"]
+		if harbor.city != "": # the canal city: a little walled town mark, its name always shown
+			draw_rect(Rect2(p - Vector2(6, 5), Vector2(12, 10)), Color(0.1, 0.1, 0.1))
+			draw_rect(Rect2(p - Vector2(5, 4), Vector2(10, 8)), Color(0.62, 0.32, 0.22))
+			for tx in [-6.0, 3.0]:
+				draw_rect(Rect2(p + Vector2(tx, -8), Vector2(3, 5)), Color(0.85, 0.75, 0.55))
+			_text(p + Vector2(0, -11), harbor.harbor_name, 9, Color(1.0, 0.92, 0.7))
+			continue
 		draw_circle(p, 4.5, Color(0.1, 0.1, 0.1), true, -1.0, true)
 		draw_circle(p, 3.5, col, true, -1.0, true)
 		if _zoom >= 2.0 or harbor.kind == "home":

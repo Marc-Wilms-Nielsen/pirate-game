@@ -231,6 +231,19 @@ Water benchmark (tests/water_bench.tscn), ms per screen of water at 1920 x 1080,
 - [x] On the map: a faint tint per area, dashed borders and the names, which fade as you zoom in
 - [x] Flavour only – no rules change. tests/zone_check.tscn
 
+## Round 19 – Lanternmouth, the canal city
+- [x] A big new island a short sail from Sunhaven, shaped for the city: its coast is cut straight along the waterfront (island and water shader alike), with deep water right off the stone quay
+- [x] The harbor: a stone quay along the whole front, a central pier where you dock, two side piers, two breakwater moles with a lighthouse and a beacon
+- [x] The canal quarter: two canals from the basin and a cross canal, promenades, stone bridges, streets and ~200 brick houses packed in rows (top-down, terracotta and slate roofs over dark brick walls, chimneys, awnings, flower pots, laundry, hanging signs)
+- [x] The old town on the hill: a stair from Lantern Square (fountain, market stalls) up through the gate in the ring wall, a ring lane, crooked old houses and the Old Market with its well
+- [x] The Chandlery on the quay is a real shop (F at the door opens the harbor menu, you walk on afterwards); three saloons for the look: The Rusty Anchor, The Drowned Rat, The Gilded Gull
+- [x] Wall lanterns and lamp posts glow at night; ships moored, ships sailing in and out, rowboats, canal barges, townsfolk and smoke
+- [x] Docking: Old Hendrik the harbourmaster welcomes you – Harbor business or Stroll ashore
+- [x] Its own named waters (The Lantern Roads) and a town mark on the map; the quest line doesn't use it. tests/city_check.tscn
+
+## Round 20 – Developer mode
+- [x] Settings → Developer mode: fast travel to every harbor for free, and the purse stays at 1,000,000 gold (tests/travel_check.tscn)
+
 ### Ideas for next round
 - [ ] Side quests from harbors (deliveries, bounties) – the quest system can carry more lines
 - [ ] Bosse-monstre (kraken) og omdømme hos kongerigerne

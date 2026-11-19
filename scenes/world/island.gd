@@ -13,6 +13,7 @@ const GULL_SOUNDS: Array[String] = [
 ]
 const MIN_POINTS := 64
 const SHORE_FADE := 22.0 ## pixels hvor sandet toner ud i vandet
+const FRONT_SHALLOW := 26.0 ## off a city's stone quay the water is deep within this many pixels
 
 @export var radius: float = 120.0:
 	set(value):
@@ -32,6 +33,7 @@ const SHORE_FADE := 22.0 ## pixels hvor sandet toner ud i vandet
 @export var harbor_name: String = "" ## Tom = ingen havn
 @export_enum("trade", "pirate", "home") var harbor_kind: String = "trade"
 @export var harbor_angle: float = 0.0 ## Retning fra øens midte, hvor molen ligger
+var harbor_city: String = "" ## a BigCity is built round this harbor (set before the island is added)
 @export_group("")
 ## 0 = rund lille ø, 1 = fastland med bugter og halvøer
 @export_range(0.0, 1.0) var coast_detail: float = 0.0:
@@ -51,6 +53,10 @@ var _gull_timer: float = 3.0
 var _gull_player: AudioStreamPlayer2D
 var _gull_streams: Array[AudioStream] = []
 var harbor: Harbor
+## A big city's island (see BigCity): the coast facing front_angle is cut straight at front_dist
+## from the middle, so the city's quay runs along a straight waterfront. 0 = an ordinary island.
+var front_angle := 0.0
+var front_dist := 0.0
 
 
 func _ready() -> void:
@@ -108,10 +114,10 @@ func _generate() -> void:
 	_add_fade_ring(inner, _offset(shape, SHORE_FADE * 0.4), sand, Color(sand.r, sand.g, sand.b, 0.0))
 	_add_polygon(_scaled(shape, 0.62), Color(0.45, 0.68, 0.35)) # græs
 	_add_polygon(_scaled(shape, 0.40), Color(0.38, 0.60, 0.30)) # tæt græs
-	if radius > 300.0 and harbor_kind != "home": # hjemøen holdes ryddet til byggeri
+	if radius > 300.0 and harbor_kind != "home" and front_dist <= 0.0: # hjemøen holdes ryddet til byggeri (a city draws its own land)
 		_add_mainland_details(rng)
 
-	for i in palm_count:
+	for i in (palm_count if front_dist <= 0.0 else 0):
 		var a := rng.randf() * TAU
 		var dist := sqrt(rng.randf()) * radius * 0.45
 		if harbor_name != "" and absf(angle_difference(a, harbor_angle)) < 0.7 and dist > radius * 0.2:
@@ -209,7 +215,18 @@ func get_shape_data() -> Array:
 	return [
 		Vector4(global_position.x, global_position.y, radius, lagoon_size),
 		Vector4(_phases.x, _phases.y, _phases.z, coast_detail),
+		Vector4(cos(front_angle), sin(front_angle), front_dist, FRONT_SHALLOW), # a city's straight quay
 	]
+
+
+## The coast as a polygon (island space).
+func land_shape() -> PackedVector2Array:
+	return _land_shape
+
+
+## A huge wild or kingdom mainland (not a city's island).
+func is_mainland() -> bool:
+	return radius > 1000.0 and front_dist <= 0.0
 
 
 func is_on_land(global_point: Vector2) -> bool:
@@ -221,11 +238,21 @@ func is_on_land(global_point: Vector2) -> bool:
 
 ## Afstand fra øens midte til stranden i en given retning (samme formel som formen).
 func shore_radius(angle: float) -> float:
+	var r := _round_radius(angle)
+	if front_dist > 0.0: # cut straight along a city's waterfront (same in ocean.gdshader)
+		var c := cos(angle - front_angle)
+		if c > 0.001:
+			r = minf(r, front_dist / c)
+	return r
+
+
+## The shore before a city's straight waterfront is cut off (the lagoon follows this one).
+func _round_radius(angle: float) -> float:
 	var p := _phases
 	var r := 1.0 + 0.16 * sin(2.0 * angle + p.x) + 0.10 * sin(3.0 * angle + p.y) + 0.05 * sin(5.0 * angle + p.z)
 	if coast_detail > 0.0:
 		r += coast_detail * (0.08 * sin(4.0 * angle + p.x * 1.7 + p.y) + 0.05 * sin(7.0 * angle + p.z * 2.3 + p.x) + 0.03 * sin(11.0 * angle + p.y * 3.1))
-	return radius * r
+	return r * radius
 
 
 ## 0 = midten, 1 = strandkanten, >1 = ude i vandet.
@@ -238,7 +265,10 @@ func normalized_distance(global_point: Vector2) -> float:
 func depth_at(global_point: Vector2) -> float:
 	if global_point.distance_squared_to(global_position) > pow(radius * 1.47 * lagoon_size, 2.0):
 		return 1.0 # langt ude: åbent hav (samme hurtige afvisning som shaderen)
-	var t := clampf((normalized_distance(global_point) - 1.0) / (lagoon_size - 1.0), 0.0, 1.0)
+	var d := global_point - global_position
+	var t := clampf((d.length() / _round_radius(d.angle()) - 1.0) / (lagoon_size - 1.0), 0.0, 1.0)
+	if front_dist > 0.0: # a city's straight quay: deep water just off the stone
+		t = maxf(t, clampf((d.dot(Vector2.from_angle(front_angle)) - front_dist) / FRONT_SHALLOW, 0.0, 1.0))
 	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 
 
@@ -257,6 +287,7 @@ func _create_harbor() -> void:
 	harbor = Harbor.new()
 	harbor.harbor_name = harbor_name
 	harbor.kind = harbor_kind
+	harbor.city = harbor_city
 	harbor.position = Vector2.from_angle(harbor_angle) * shore_radius(harbor_angle) * 0.86
 	harbor.rotation = harbor_angle
 	add_child(harbor)

@@ -8,6 +8,7 @@ const DOCK_RADIUS := 80.0
 
 var harbor_name: String = "Harbor"
 var kind: String = "trade" ## "trade" eller "pirate"
+var city: String = "" ## the name of the BigCity built round this harbor (it draws the stone quays instead)
 
 var _flag_time: float = 0.0
 var _flag: Polygon2D
@@ -22,6 +23,8 @@ func _ready() -> void:
 	var label := HarborLabel.new()
 	label.text = harbor_name
 	label.subtitle = "Pirate harbor" if kind == "pirate" else "Trade harbor"
+	if city != "":
+		label.subtitle = "Canal city"
 	if kind == "home":
 		label.home = true
 	label.position = Vector2(PIER_LENGTH * 0.5, 0)
@@ -63,6 +66,9 @@ func _build_dock_zone() -> void:
 
 
 func _build_visuals() -> void:
+	if city != "": # the BigCity draws the stone quays, piers and moles
+		_build_flag()
+		return
 	var wood := Color(0.55, 0.38, 0.22)
 	var dark_wood := Color(0.38, 0.25, 0.14)
 	# Skygge + mole

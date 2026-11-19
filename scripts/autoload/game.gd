@@ -11,6 +11,7 @@ signal player_ship_sunk
 signal pirate_boarding(enemy: Node2D) ## en pirat har lagt sig op ad og entrer dig
 @warning_ignore("unused_signal") # udsendes af kaptajnen ved slotsporten
 signal duel_requested(castle: Node2D) ## kaptajnen udfordrer et kongerige
+signal shop_requested(harbor: Node2D) ## the captain walks into a shop in a big city (opens the harbor menu)
 
 var save_path := "user://save.dat" ## tests switch to their own file (use_test_files)
 const SAVE_VERSION := 3 ## 2: opgraderinger har 100 trin. 3: 10x større verden
@@ -47,6 +48,7 @@ var harbor_rep: Dictionary = {} ## fraktion -> samlet salg i guld (venskab). Gam
 var kingdom_wins: Dictionary = {} ## kongerige-id -> antal vundne dueller
 var kingdom_ready_at: Dictionary = {} ## kongerige-id -> unix-tid hvor det kan udfordres igen
 var visited_harbors: Dictionary = {} ## harbor name -> true: where you have docked (fast travel goes there)
+var walkways: Array = [] ## big cities: their quays, piers and moles out over the water can be walked on (is_walkable)
 var captain_look: Dictionary = {} ## the captain's chosen look: part key -> option id (Catalog.CAPTAIN_STYLE_PARTS)
 var world_time: float = 0.3 ## tid på døgnet 0..1 (0 = midnat, 0.5 = middag) – gemmes
 var night: float = 0.0 ## 0 = dag, 1 = nat (sættes af Sky)
@@ -72,6 +74,8 @@ func _ready() -> void:
 
 func reset() -> void:
 	gold = TEST_START_GOLD if _test_mode else START_GOLD
+	if Settings.developer_mode and not _test_mode:
+		gold = DEV_GOLD
 	cannonballs = START_CANNONBALLS
 	food = START_FOOD
 	crew = Catalog.START_CREW
@@ -395,6 +399,15 @@ func kingdom_cooldown(index: int) -> void:
 
 # --- Guld og varer -----------------------------------------------------------
 
+const DEV_GOLD := 1000000
+
+## Developer mode (Settings.developer_mode): fills the purse up to a million.
+func dev_top_up() -> void:
+	if Settings.developer_mode and gold < DEV_GOLD:
+		gold = DEV_GOLD
+		changed.emit()
+
+
 func add_gold(amount: int) -> void:
 	gold += amount
 	changed.emit()
@@ -406,6 +419,7 @@ func spend(amount: int) -> bool:
 		return false
 	gold -= amount
 	changed.emit()
+	dev_top_up() # developer mode: the purse never runs dry
 	return true
 
 
@@ -760,6 +774,16 @@ func is_land(pos: Vector2) -> bool:
 	return false
 
 
+## Land, or a big city's stone quay, pier or mole (where the captain walks instead of swimming).
+func is_walkable(pos: Vector2) -> bool:
+	if is_land(pos):
+		return true
+	for w in walkways:
+		if is_instance_valid(w) and w.covers(pos):
+			return true
+	return false
+
+
 func popup(text: String, pos: Vector2, color := Color.WHITE, icon := "") -> void:
 	if world_root == null:
 		return
@@ -847,6 +871,7 @@ func load_game() -> bool:
 		extra.call(data)
 	loaded_from_save = true
 	changed.emit()
+	dev_top_up()
 	return true
 
 

@@ -568,6 +568,21 @@ const QUEST_PEOPLE := {
 		"hair_style": "long", "hat": "none", "beard": "none", "glasses": true, "coat": Color(0.2, 0.35, 0.6)}},
 	"celestine": {"name": "Lady Celestine", "title": "Envoy of Aurelia", "look": {"skin": Color(0.98, 0.85, 0.75), "hair": Color(0.95, 0.8, 0.45),
 		"hair_style": "long", "hat": "feather", "hat_color": Color(0.75, 0.15, 0.2), "beard": "none", "earring": true, "coat": Color(0.7, 0.15, 0.2)}},
+	# The harbourmaster who welcomes you to the canal city (see CITY)
+	"hendrik": {"name": "Old Hendrik", "title": "Harbourmaster of Lanternmouth", "look": {"skin": Color(0.88, 0.7, 0.58), "hair": Color(0.82, 0.8, 0.76),
+		"hair_style": "short", "hat": "tricorn", "hat_color": Color(0.2, 0.16, 0.13), "beard": "full", "beard_color": Color(0.85, 0.83, 0.8), "coat": Color(0.35, 0.18, 0.14)}},
+}
+
+## The canal city (BigCity): a big brick harbor town on its own island a short sail from
+## Sunhaven, with canals by the sea and an old town on the hill behind them.
+const CITY := {
+	"name": "Lanternmouth",
+	"zone": "The Lantern Roads", "zone_color": Color(0.95, 0.6, 0.3),
+	"shop": "Chandlery", ## the shop you walk into (it opens the harbor menu)
+	"saloons": ["The Rusty Anchor", "The Drowned Rat", "The Gilded Gull"],
+	"person": "hendrik",
+	"welcome": ["Welcome to Lanternmouth, captain. Mind the canals – they've swallowed many a sailor on his way home from the saloons.",
+		"Your berth is ready. Harbor business, or a stroll through the old town?"],
 }
 
 ## The quest line, in order. Fields:
